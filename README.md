@@ -4,11 +4,12 @@ The same coding prompts, fed into different AI models and their results.
 ### /prompts
 The prompts used
 
-### /results
-The resulting code, organized by prompt, provider and model with the directory structure:
-
 ### /benchmarks
 Code generation benchmarks for each prompt, provider and model combination.
+
+
+### /results
+The resulting code, organized by prompt, provider and model with the directory structure:
 
 ```
 /<prompt>/<provider>/<model>/<run>

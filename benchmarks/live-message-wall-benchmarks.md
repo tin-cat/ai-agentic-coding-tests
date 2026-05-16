@@ -15,11 +15,11 @@ claude-code-pro|opus-4.7|||||
 ## manually-refined
 Provider|Model|Settings|Time|Tokens out|Cost|Conclusion
 ---|---|---|---|---|---|---
-claude-code-pro|sonnet-4.6|`effort:high`|38:05|147.9k|$6.58|Some additional prompting to fix minor UI bugs was needed. Excellent otherwise.
+claude-code-pro|sonnet-4.6|`effort:high`|38:05|147.9k|$6.58|Some additional prompting to fix minor UI bugs needed. Excellent otherwise.
 claude-code-pro|opus-4.7|||||
 
 ## complex-manual-refinements
 Provider|Model|Settings|Time|Tokens out|Cost|Conclusion
 ---|---|---|---|---|---|---
-claude-code-pro|sonnet-4.6|`effort:high`||||needed. Excellent otherwise.
+claude-code-pro|sonnet-4.6|`effort:high`|8:10|28.8k|$1.13|Some additional prompting to fix minor UX bugs needed. Excellent otherwise.
 claude-code-pro|opus-4.7|||||
