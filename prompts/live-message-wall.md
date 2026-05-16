@@ -52,6 +52,8 @@ All dates are stored and displayed in UTC.
 Allow emojis in messages.
 
 When clicking the top input to start writing a message, or when typing on it, the input becomes a big textarea to allow and entice the user to write long messages. Messages can be up to 4KB, ensure the limit is not surpassed.
+
+Store the message currently being written in the browser storage so it's not lost if the user accidentally reloads the page, or if it closes the page and comes back sometime after.
 ```
 
 ## Complex manual refinements
