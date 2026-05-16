@@ -18,3 +18,9 @@ Provider|Model|Settings|Time|Tokens out|Cost|Conclusion
 ---|---|---|---|---|---|---
 claude-code-pro|sonnet-4.6|`effort:high`||||
 claude-code-pro|opus-4.7|||||
+
+## live-message-wall / complex-manual-refinements
+Provider|Model|Settings|Time|Tokens out|Cost|Conclusion
+---|---|---|---|---|---|---
+claude-code-pro|sonnet-4.6|`effort:high`||||
+claude-code-pro|opus-4.7|||||
