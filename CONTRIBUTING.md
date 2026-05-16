@@ -1,6 +1,8 @@
 # Contributing
 Please feel free to contribute your tests to this repository. You can either contribute entire new tests, or your runs of existing tests.
 
+The easiest way is the CLI: `scripts/cli.py run add` and `scripts/cli.py test add` walk you through it interactively. See [Browse with the CLI](README.md#browse-with-the-cli) for setup. The sections below describe the same workflow manually, in case you'd rather edit files directly — run `scripts/cli.py validate` after any manual edit to check the result.
+
 ## Contribute your run of an existing test
 
 1. Pick a test under `/tests/<test name>/`. Open its `test.yaml` to see the test description and each stage's prompt.
@@ -17,21 +19,29 @@ Please feel free to contribute your tests to this repository. You can either con
 
 ```yaml
 contributor: your-github-username
+date: 2026-05-16              # the day the run was performed (YYYY-MM-DD)
 
 agent:
   name: claude-code           # the coding agent / client (e.g. claude-code, cursor, aider, opencode)
   plan: pro                   # optional; the agent's plan or tier
 
-provider: anthropic           # the inference endpoint (e.g. anthropic, openrouter, ollama, lm-studio)
+provider: anthropic           # one of: anthropic, openai, openrouter, bedrock, gemini, self-hosted, other
 model: sonnet-4.6             # the model identifier
 settings:                     # any agent or model settings that affect behavior
   effort: high
 
-# Only for local inference; omit otherwise.
+# Required when provider is "self-hosted" (you run the inference on your own or rented infra); omit otherwise.
+framework: lm-studio          # inference engine (e.g. lm-studio, ollama, llama.cpp, vllm, mlx)
+
+# Optional; meaningful for self-hosted inference. How the model is loaded (e.g. q4_K_M, q8_0, fp16).
+quantization: q4_K_M
+
+# Recommended when provider is "self-hosted"; omit otherwise. Physical machine only.
 hardware:
-  device: m3-max
+  device: nvidia-spark        # overall machine label
+  gpu: rtx-4090               # GPU model (if not implied by `device`)
+  vram_gb: 24
   ram_gb: 64
-  quantization: q4_K_M
 
 stages:
   - id: stage-1-first-run     # must match a stage id from test.yaml
@@ -76,11 +86,11 @@ If your github username were `anthony` and you ran the first two stages of the `
    - `name` — the test's directory name.
    - `title` — a short, human-readable title.
    - `description` — a short description of what the test simulates.
+   - `domain` (optional) — one of: `full-stack-web`, `backend`, `frontend`, `cli`, `mobile`, `data`, `library`, `other`.
    - `stages` — an ordered list, each with:
      - `id` — matches the stage directory name in contributed runs (use `stage-N-<short-theme>`).
-     - `theme` — a one-word label for the stage's focus.
+     - `theme` — one of: `bootstrap`, `features`, `refinements`, `refactor`, `extension`, `performance`, `security`, `other`.
      - `prompt` — the prompt verbatim, as it will be fed into the LLM (use a `|` block scalar to preserve formatting).
-     - `evaluation` — a checklist of features the stage should produce.
      - `builds_on` (optional, for stages 2+) — the `id` of the stage this one continues from.
 
    > Recommended: start with a simpler `stage-1-first-run`, then add complexity in consecutive stages to strain the model.
