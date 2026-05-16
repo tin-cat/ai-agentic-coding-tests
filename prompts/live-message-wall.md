@@ -29,3 +29,19 @@ Prevent users from flooding the wall, for example, by not allowing the same user
 
 Messages in the wall disappear slowly over time, becoming gradually transparent until they completely disappear. The maximum age of all messages is 1 month. Once a message has completely disappeared, you can remove it from the database.
 ```
+
+## Manual refinements
+
+```
+Do not use IP to rate limit.
+
+Change the rate limit to 1 message every 10 minutes.
+
+Show a toast when the user tries to add a message but is rate limited, letting them know about the amount of remaining time until they can post a message again.
+
+When hovering a message, it becomes opaque so hovering old, almost invisible messages allows the user to see them before clicking to reveal the full message.
+
+Links in messages are clickable in the modal.
+
+Add CSRF check to the message posting. Check messages for XSS and other hacks to prevent security bugs.
+```
