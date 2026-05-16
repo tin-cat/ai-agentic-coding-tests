@@ -16,16 +16,17 @@ There is a top, slim, sticky bar that contains the input for the user to enter i
 Messages on the wall have a fixed size, and the text is cropped if it does not fit into the message card. When clicked, a model opens to let the user read the entire message.
 
 Messages on the wall are displayed from top to bottom and left to right, just like the text flow of newspapers, filling the entire available screen, and scrolling horizontally when there are more messages than the screen can fit.
+
+Add a README.md file that documents the application and its technical structure.
 ```
 
-## Additional prompt #1
+## Additional prompts
 
 ```
 Prevent users from flooding the wall, for example, by not allowing the same user to add a message if they already added one in the last hour.
 ```
 
-## Additional prompt #2
-
 ```
+Add a couple thousand random messages for testing.
 Make the wall lazy loading, so it only loads the first N messages at first, and loads more automatically as the user scrolls to the right.
 ```
