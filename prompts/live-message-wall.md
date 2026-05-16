@@ -22,14 +22,10 @@ Add a README.md file that documents the application and its technical structure.
 ## Advanced features
 
 ```
-Prevent users from flooding the wall, for example, by not allowing the same user to add a message if they already added one in the last hour.
-```
-
-```
 Add a couple thousand random messages for testing.
 Make the wall lazy loading, so it only loads the first N messages at first, and loads more automatically as the user scrolls to the right.
-```
 
-```
+Prevent users from flooding the wall, for example, by not allowing the same user to add a message if they already added one in the last hour.
+
 Messages in the wall disappear slowly over time, becoming gradually transparent until they completely disappear. The maximum age of all messages is 1 month. Once a message has completely disappeared, you can remove it from the database.
 ```
