@@ -6,6 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MAX_LEN = 500;
 const PAGE_SIZE = 50;
+const TEN_MIN_MS = 10 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -13,7 +14,49 @@ const messages = []; // sorted newest-first
 const clients = new Set();
 const rateLimits = new Map(); // ip -> lastPostTimestamp
 
+function parseCookies(req) {
+  const cookies = {};
+  const header = req.headers.cookie;
+  if (!header) return cookies;
+  for (const part of header.split(';')) {
+    const eqIdx = part.indexOf('=');
+    if (eqIdx < 0) continue;
+    const key = part.slice(0, eqIdx).trim();
+    const val = part.slice(eqIdx + 1).trim();
+    try { cookies[key] = decodeURIComponent(val); } catch (_) { cookies[key] = val; }
+  }
+  return cookies;
+}
+
 app.use(express.json({ limit: '16kb' }));
+
+// Issue CSRF token + user ID cookies for new visitors
+app.use((req, res, next) => {
+  const cookies = parseCookies(req);
+  const setCookies = [];
+
+  // CSRF: not HttpOnly so client JS can read it
+  if (!cookies.wallCsrfToken) {
+    const token = crypto.randomBytes(32).toString('hex');
+    setCookies.push(`wallCsrfToken=${token}; SameSite=Strict; Path=/`);
+    req.csrfToken = undefined;
+  } else {
+    req.csrfToken = cookies.wallCsrfToken;
+  }
+
+  // User ID: HttpOnly — only the server needs it for rate limiting
+  if (!cookies.wallUserId) {
+    const uid = crypto.randomUUID();
+    setCookies.push(`wallUserId=${uid}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${365 * 24 * 60 * 60}`);
+    req.userId = undefined;
+  } else {
+    req.userId = cookies.wallUserId;
+  }
+
+  if (setCookies.length > 0) res.setHeader('Set-Cookie', setCookies);
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Seed data ──────────────────────────────────────────────
@@ -388,11 +431,11 @@ setInterval(() => {
 }, ONE_HOUR_MS);
 
 setInterval(() => {
-  const cutoff = Date.now() - ONE_HOUR_MS;
-  for (const [ip, ts] of rateLimits) {
-    if (ts < cutoff) rateLimits.delete(ip);
+  const cutoff = Date.now() - TEN_MIN_MS;
+  for (const [key, ts] of rateLimits) {
+    if (ts < cutoff) rateLimits.delete(key);
   }
-}, 5 * 60 * 1000);
+}, 60 * 1000);
 
 // ── Routes ─────────────────────────────────────────────────
 
@@ -431,15 +474,28 @@ app.get('/events', (req, res) => {
 });
 
 app.post('/messages', (req, res) => {
+  // CSRF: double-submit cookie check
+  const csrfHeader = req.headers['x-csrf-token'];
+  if (!req.csrfToken || req.csrfToken !== csrfHeader) {
+    return res.status(403).json({ error: 'Invalid CSRF token.' });
+  }
+
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
     || req.socket.remoteAddress
     || 'unknown';
   const now = Date.now();
+  const ipKey = `ip:${ip}`;
+  const userKey = req.userId ? `user:${req.userId}` : null;
 
-  const lastPost = rateLimits.get(ip);
-  if (lastPost && now - lastPost < ONE_HOUR_MS) {
-    const retryAfter = Math.ceil((ONE_HOUR_MS - (now - lastPost)) / 1000);
-    return res.status(429).json({ error: 'You can only post once per hour.', retryAfter });
+  // Rate limit by both cookie user ID and IP — guards against cookie-clearing bypass
+  const lastPost = Math.max(
+    rateLimits.get(ipKey) || 0,
+    userKey ? (rateLimits.get(userKey) || 0) : 0,
+  );
+
+  if (lastPost && now - lastPost < TEN_MIN_MS) {
+    const retryAfter = Math.ceil((TEN_MIN_MS - (now - lastPost)) / 1000);
+    return res.status(429).json({ error: 'Rate limited.', retryAfter });
   }
 
   const body = req.body ?? {};
@@ -447,8 +503,13 @@ app.post('/messages', (req, res) => {
 
   if (!text) return res.status(400).json({ error: 'Message text is required.' });
   if (text.length > MAX_LEN) return res.status(400).json({ error: `Max ${MAX_LEN} characters.` });
+  // Reject C0/C1 control characters (allow tab \x09, newline \x0a, CR \x0d)
+  if (/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(text)) {
+    return res.status(400).json({ error: 'Invalid message content.' });
+  }
 
-  rateLimits.set(ip, now);
+  rateLimits.set(ipKey, now);
+  if (userKey) rateLimits.set(userKey, now);
 
   const msg = {
     id: crypto.randomUUID(),

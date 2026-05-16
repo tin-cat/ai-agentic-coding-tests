@@ -154,12 +154,14 @@
       flex-direction: column;
       cursor: pointer;
       overflow: hidden;
-      transition: border-color 100ms, opacity 8s linear;
+      transition: border-color 100ms, opacity 400ms;
       position: relative;
     }
 
     .card:hover {
       border-color: var(--border-hi);
+      opacity: 1 !important;
+      transition: border-color 100ms, opacity 120ms;
     }
 
     .card:hover .card-body {
@@ -308,6 +310,39 @@
       scrollbar-color: var(--border-hi) transparent;
     }
 
+    /* ── Modal links ─────────────────────────────────────── */
+
+    #modal-body a {
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    #modal-body a:hover { text-decoration: underline; }
+
+    /* ── Toast ───────────────────────────────────────────── */
+
+    #toast {
+      position: fixed;
+      bottom: calc(var(--status-h) + 12px);
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: var(--surface);
+      border: 1px solid var(--border-hi);
+      color: var(--text);
+      padding: 7px 14px;
+      font-size: 11px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 180ms, transform 180ms;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    #toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     /* ── Layout wiring ───────────────────────────────────── */
 
     body { display: flex; flex-direction: column; }
@@ -340,6 +375,9 @@
   <span id="status-count">0 messages</span>
 </div>
 
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite"></div>
+
 <!-- Modal -->
 <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="modal-ts">
   <div id="modal">
@@ -353,8 +391,10 @@
 
 <script>
   const MAX_LEN = 500;
+  const TEN_MIN_MS = 10 * 60 * 1000;
   const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
+  const toast      = document.getElementById('toast');
   const wallOuter  = document.getElementById('wall-outer');
   const wall       = document.getElementById('wall');
   const empty      = document.getElementById('empty');
@@ -369,6 +409,7 @@
   const modalBody  = document.getElementById('modal-body');
   const modalClose = document.getElementById('modal-close');
 
+  let toastTimer = null;
   let loadedCount = 0;
   let totalCount = 0;
   let oldestTimestamp = null;
@@ -381,7 +422,36 @@
   // ── Helpers ────────────────────────────────────────────
 
   function esc(s) {
-    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+  }
+
+  // Wrap http(s) URLs in <a> tags; all text is HTML-escaped
+  function linkify(text) {
+    const URL_RE = /https?:\/\/[^\s<>"{}|\\^`[\]]+/g;
+    const parts = [];
+    let last = 0;
+    let m;
+    while ((m = URL_RE.exec(text)) !== null) {
+      parts.push(esc(text.slice(last, m.index)));
+      const url = m[0];
+      parts.push(`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(url)}</a>`);
+      last = URL_RE.lastIndex;
+    }
+    parts.push(esc(text.slice(last)));
+    return parts.join('');
+  }
+
+  function getCsrfToken() {
+    const m = document.cookie.match(/(?:^|; )wallCsrfToken=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  function showToast(msg, ms = 4000) {
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('visible'), ms);
   }
 
   function fmtTs(iso) {
@@ -500,7 +570,7 @@
 
   function openModal(msg) {
     modalTs.textContent = fmtTs(msg.timestamp);
-    modalBody.textContent = msg.text;
+    modalBody.innerHTML = linkify(msg.text);
     overlay.classList.add('open');
     modalClose.focus();
   }
@@ -564,13 +634,29 @@
     const text = input.value.trim();
     if (!text || text.length > MAX_LEN) return;
 
+    // Inform user of remaining cooldown instead of silently ignoring Enter
+    if (postBtn.disabled) {
+      const stored = localStorage.getItem('wallCooldownUntil');
+      if (stored) {
+        const remaining = Math.ceil((parseInt(stored, 10) - Date.now()) / 1000);
+        if (remaining > 0) {
+          const m = Math.floor(remaining / 60), s = remaining % 60;
+          showToast(m > 0 ? `Rate limited — try again in ${m}m ${s}s` : `Rate limited — try again in ${s}s`);
+        }
+      }
+      return;
+    }
+
     postBtn.disabled = true;
     postBtn.textContent = '[ posting… ]';
 
     try {
       const r = await fetch('/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCsrfToken(),
+        },
         body: JSON.stringify({ text }),
       });
 
@@ -578,23 +664,25 @@
         input.value = '';
         charCount.textContent = MAX_LEN;
         charCount.className = '';
-        // Store cooldown: can post again in 1 hour
-        localStorage.setItem('wallCooldownUntil', String(Date.now() + 60 * 60 * 1000));
-        startCooldown(60 * 60);
+        localStorage.setItem('wallCooldownUntil', String(Date.now() + TEN_MIN_MS));
+        startCooldown(10 * 60);
       } else {
         const data = await r.json().catch(() => ({}));
         if (r.status === 429 && data.retryAfter) {
-          startCooldown(data.retryAfter);
+          const ra = data.retryAfter;
+          startCooldown(ra);
+          const m = Math.floor(ra / 60), s = ra % 60;
+          showToast(m > 0 ? `Rate limited — try again in ${m}m ${s}s` : `Rate limited — try again in ${s}s`);
         } else {
           postBtn.disabled = false;
           postBtn.textContent = '[ add to wall ]';
-          alert(data.error || 'Could not post message.');
+          showToast(data.error || 'Could not post message.');
         }
       }
     } catch {
       postBtn.disabled = false;
       postBtn.textContent = '[ add to wall ]';
-      alert('Network error. Please try again.');
+      showToast('Network error. Please try again.');
     } finally {
       input.focus();
     }
