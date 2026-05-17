@@ -1693,7 +1693,7 @@ app.add_typer(run_app, name="run")
 
 @app.command("browse")
 def browse_cmd() -> None:
-    """Open the AgentArena TUI to navigate tests, runs, and their details."""
+    """Browse tests, runs, and their details."""
     AgentArenaApp().run()
 
 
@@ -1814,7 +1814,7 @@ def validate_cmd(
         help="Optional path to a single test.yaml or run.yaml. Validates the whole repo if omitted.",
     ),
 ) -> None:
-    """Validate test.yaml and run.yaml files against the schema and cross-check references."""
+    """Validate test.yaml and run.yaml files."""
     errors: list[tuple[Path, str]] = []
 
     if path is not None:
