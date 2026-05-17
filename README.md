@@ -3,9 +3,11 @@
 # AgentArena
 **A community benchmark for AI coding agent performance**
 
+[➜ See current test results](https://agentarena.tin.cat)
+
 Choosing the right AI coding agent setup has too many moving parts to evaluate alone. Between the agent, model, provider, configurations, and hardware, there are too many variables—and vendor benchmarks rarely reflect real-world workloads. This repository collects community-contributed runs of the same real coding tasks across the combinations that matter, so you can compare them head-to-head.
 
-Each test unfolds in stages — an unattended first build, then progressively harder refinements — so results reflect not just whether a setup ships something, but whether it holds up under realistic follow-up work. [Contributors](CONTRIBUTING.md) add their own runs and new tests, and coverage grows with what the community cares about: cloud vs. self-hosted, frontier vs. open-weight, high-effort vs. fast, all rated against the same prompts on the same scale.
+Each test unfolds in stages: an unattended first build, then progressively harder refinements so results reflect not just whether a setup ships something, but whether it holds up under realistic follow-up work. [Contributors](CONTRIBUTING.md) add their own runs and new tests, and coverage grows with what the community cares about: cloud vs. self-hosted, frontier vs. open-weight, high-effort vs. fast, all rated against the same prompts on the same scale.
 
 ---
 
