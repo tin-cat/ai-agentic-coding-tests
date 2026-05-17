@@ -87,18 +87,54 @@ const COMMON_TOOLTIP = {
 };
 
 /* ════════════════════════════════════════════════════════════════════════
-   Router — hash-based with parameterized routes
+   Lazy-loaded data — sharded JSON, fetched on demand, cached in memory
+   ════════════════════════════════════════════════════════════════════════ */
+const _jsonCache = new Map();
+function loadJSON(path) {
+  if (_jsonCache.has(path)) return _jsonCache.get(path);
+  const p = fetch(path, { cache: 'force-cache' }).then((r) => {
+    if (!r.ok) throw new Error(`Could not load ${path} (HTTP ${r.status})`);
+    return r.json();
+  }).catch((err) => {
+    _jsonCache.delete(path);  // allow retry on next visit
+    throw err;
+  });
+  _jsonCache.set(path, p);
+  return p;
+}
+const loadRuns        = ()         => loadJSON('runs.json').then((d) => d.runs);
+const loadTest        = (name)     => loadJSON(`tests/${encodeURIComponent(name)}.json`);
+const loadRun         = (t, id)    => loadJSON(`runs/${encodeURIComponent(t)}/${encodeURIComponent(id)}.json`);
+const loadContributor = (handle)   => loadJSON(`contributors/${encodeURIComponent(handle)}.json`);
+
+const SKELETON = `<div class="panel"><div class="panel-body t-mute">loading…</div></div>`;
+
+function errorPanelHTML(err) {
+  const fileScheme = location.protocol === 'file:';
+  return `<div class="panel">
+    <div class="panel-head"><span class="panel-title alt">error</span></div>
+    <div class="panel-body">
+      <p>${esc(err.message || String(err))}</p>
+      ${fileScheme ? `<p class="t-mute" style="margin-top:14px">Browsers block <code>fetch()</code> from <code>file://</code>. Serve the site locally:</p>
+        <pre style="background:var(--bg-2);padding:10px;border-radius:4px;color:var(--cyan);font-size:11.5px;">python3 -m http.server -d site 8000</pre>
+        <p class="t-mute">then open <a href="http://localhost:8000">http://localhost:8000</a>.</p>` : ''}
+    </div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Router — hash-based, with parameterized routes + async handlers
    ════════════════════════════════════════════════════════════════════════ */
 const routes = [
-  { pat: /^\/?$|^\/overview$/,                          name: 'overview',     handler: renderOverview },
-  { pat: /^\/leaderboard$/,                             name: 'leaderboard',  handler: renderLeaderboard },
-  { pat: /^\/tests$/,                                   name: 'tests',        handler: () => renderTests(null) },
-  { pat: /^\/tests\/([^/]+)$/,                          name: 'tests',        handler: (m) => renderTests(m[1]) },
-  { pat: /^\/tests\/([^/]+)\/runs\/([^/]+)$/,           name: 'tests',        handler: (m) => renderRunDetail(m[1], m[2]) },
-  { pat: /^\/runs$/,                                    name: 'runs',         handler: () => renderRuns(null) },
-  { pat: /^\/runs\/([^/]+)\/([^/]+)$/,                  name: 'runs',         handler: (m) => renderRunDetail(m[1], m[2], 'runs') },
-  { pat: /^\/contributors$/,                            name: 'contributors', handler: renderContributors },
-  { pat: /^\/contributors\/([^/]+)$/,                   name: 'contributors', handler: (m) => renderContributorProfile(decodeURIComponent(m[1])) },
+  { pat: /^\/?$|^\/overview$/,                          name: 'overview',     handler: (_m, gen) => renderOverview(gen) },
+  { pat: /^\/leaderboard$/,                             name: 'leaderboard',  handler: (_m, gen) => renderLeaderboard(gen) },
+  { pat: /^\/tests$/,                                   name: 'tests',        handler: (_m, gen) => renderTests(null, gen) },
+  { pat: /^\/tests\/([^/]+)$/,                          name: 'tests',        handler: (m, gen) => renderTests(m[1], gen) },
+  { pat: /^\/tests\/([^/]+)\/runs\/([^/]+)$/,           name: 'tests',        handler: (m, gen) => renderRunDetail(m[1], m[2], 'tests', gen) },
+  { pat: /^\/runs$/,                                    name: 'runs',         handler: (_m, gen) => renderRuns(gen) },
+  { pat: /^\/runs\/([^/]+)\/([^/]+)$/,                  name: 'runs',         handler: (m, gen) => renderRunDetail(m[1], m[2], 'runs', gen) },
+  { pat: /^\/contributors$/,                            name: 'contributors', handler: (_m, gen) => renderContributors(gen) },
+  { pat: /^\/contributors\/([^/]+)$/,                   name: 'contributors', handler: (m, gen) => renderContributorProfile(decodeURIComponent(m[1]), gen) },
 ];
 
 function parseHash() {
@@ -106,18 +142,34 @@ function parseHash() {
   return h || '/overview';
 }
 
-function route() {
+// Each route() call gets a monotonically-increasing token. Async handlers check
+// `currentGen()` before mutating the DOM to avoid stale renders when the user
+// navigates again before a fetch resolves.
+let _routeGen = 0;
+const currentGen = () => _routeGen;
+const isStale = (gen) => gen !== _routeGen;
+
+async function route() {
+  const gen = ++_routeGen;
   destroyAllCharts();
   const path = parseHash();
+  $('#main').scrollTop = 0;
   for (const r of routes) {
     const m = path.match(r.pat);
     if (m) {
       highlightNav(r.name);
-      r.handler(m);
+      try {
+        const ret = r.handler(m, gen);
+        if (ret && typeof ret.then === 'function') await ret;
+      } catch (err) {
+        if (isStale(gen)) return;
+        console.error(err);
+        view().innerHTML = errorPanelHTML(err);
+      }
+      if (isStale(gen)) return;
       view().classList.remove('fade-in');
       void view().offsetWidth;  // re-trigger animation
       view().classList.add('fade-in');
-      $('#main').scrollTop = 0;
       return;
     }
   }
@@ -228,10 +280,10 @@ function heroHTML() {
         <div class="hero-main">
           <div class="hero-eyebrow">▌ welcome</div>
           <h1 class="hero-title">${esc(tagline)}.</h1>
-          <p class="hero-lead">Picking an AI coding agent setup is a mess of variables: agent · model · provider · settings · hardware, and vendor benchmarks rarely reflect real workloads. We collect community-contributed runs of the same coding tasks across the setups that matter, so you can compare them head-to-head.</p>
+          <p class="hero-lead">Picking an AI coding agent setup is a mess of variables: agent · model · provider · settings · hardware, and vendor benchmarks rarely reflect real workloads. We collect community-contributed runs of the same coding tasks to compare real-world performance and rank the best.</p>
           <div class="hero-ctas">
             <a class="cta cta-primary" href="#/leaderboard">→ see the leaderboard</a>
-            <a class="cta" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your runs</a>
+            <a class="cta" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your tests</a>
           </div>
         </div>
         <aside class="hero-side">
@@ -274,6 +326,9 @@ function feedItemHTML(c) {
 /* ─────────────────────────── 02 · LEADERBOARD ─────────────────────────── */
 function renderLeaderboard() {
   const rows = DATA.leaderboard;
+  const profiles = (DATA.contributors && DATA.contributors.profiles) || [];
+  const topContribs = profiles.slice(0, 8);
+
   view().innerHTML = `
     ${viewHead('leaderboard', '02', 'Aggregated across every contributed stage. Ranked by average rating score (excellent = 1.0, good = 0.75, partial = 0.4, failed = 0.0).')}
 
@@ -288,6 +343,21 @@ function renderLeaderboard() {
     <div class="panel">
       <div class="panel-head"><span class="panel-title">full table</span></div>
       <div class="panel-body dense">${leaderboardTableHTML(rows)}</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title alt">contributors leaderboard</span>
+        <span class="panel-actions">
+          <span class="t-mute">${profiles.length} contributor${profiles.length === 1 ? '' : 's'}</span>
+          <a class="t-cyan" href="#/contributors" style="margin-left:10px;">see all →</a>
+        </span>
+      </div>
+      <div class="panel-body dense">${contribCardsHTML(topContribs)}</div>
+      <div class="panel-body" style="border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+        <div class="t-dim" style="font-size: 12px;">▌ want to see your handle on this board? add a run and you're in.</div>
+        <a class="cta cta-primary" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your runs</a>
+      </div>
     </div>
   `;
   mountLeaderBar(rows);
@@ -319,10 +389,12 @@ function leaderboardTableHTML(rows) {
 }
 
 /* ────────────────────────────── 03 · TESTS ────────────────────────────── */
-function renderTests(selectedName) {
-  const tests = DATA.per_test;
+async function renderTests(selectedName, gen) {
+  const tests = DATA.tests;
   const selected = tests.find((t) => t.name === selectedName) || tests[0];
 
+  // Master list renders synchronously from the index. The detail slot shows a
+  // skeleton, then swaps in once `tests/<name>.json` resolves.
   view().innerHTML = `
     ${viewHead('tests', '03', 'Browse community-defined tests, their stage prompts, and the runs contributed against each.')}
 
@@ -333,20 +405,29 @@ function renderTests(selectedName) {
           <div class="test-list">${tests.map((t) => testListItemHTML(t, selected && t.name === selected.name)).join('')}</div>
         </div>
       </div>
-      <div>${selected ? testDetailHTML(selected) : '<div class="panel"><div class="panel-body t-mute">no tests yet.</div></div>'}</div>
+      <div id="testDetailSlot">${selected ? SKELETON : '<div class="panel"><div class="panel-body t-mute">no tests yet.</div></div>'}</div>
     </div>
   `;
-  if (selected) {
-    mountTestThemeChart(selected);
+  if (!selected) return;
+
+  try {
+    const test = await loadTest(selected.name);
+    if (isStale(gen)) return;
+    const slot = $('#testDetailSlot');
+    if (slot) slot.innerHTML = testDetailHTML(test);
+    mountTestThemeChart(test);
+  } catch (err) {
+    if (isStale(gen)) return;
+    const slot = $('#testDetailSlot');
+    if (slot) slot.innerHTML = errorPanelHTML(err);
   }
 }
 
 function testListItemHTML(t, isActive) {
-  const tops = (t.runs[0] && t.runs[0].avg_rating_score) || null;
   return `<a class="test-list-item ${isActive ? 'active' : ''}" href="#/tests/${esc(t.name)}">
     <div class="name">${esc(t.name)}${t.domain ? ` · ${esc(t.domain)}` : ''}</div>
     <div class="title">${esc(t.title)}</div>
-    <div class="meta">${t.run_count} run${t.run_count === 1 ? '' : 's'} · ${t.stages_total} stage${t.stages_total === 1 ? '' : 's'}${tops != null ? ` · top ${fmtScore(tops)}` : ''}</div>
+    <div class="meta">${t.run_count} run${t.run_count === 1 ? '' : 's'} · ${t.stages_total} stage${t.stages_total === 1 ? '' : 's'}${t.top_score != null ? ` · top ${fmtScore(t.top_score)}` : ''}</div>
   </a>`;
 }
 
@@ -433,21 +514,36 @@ function runsTableHTML(runs, opts = {}) {
 }
 
 /* ────────────────────────────── 04 · RUNS ────────────────────────────── */
-function renderRuns() {
-  const runs = DATA.all_runs;
+async function renderRuns(gen) {
   view().innerHTML = `
-    ${viewHead('runs', '04', `All ${runs.length} contributed runs across every test. Click a row to inspect stages, costs, and notes.`)}
+    ${viewHead('runs', '04', 'All contributed runs across every test. Click a row to inspect stages, costs, and notes.')}
+    <div id="runsSlot">${SKELETON}</div>
+  `;
+  const runs = await loadRuns();
+  if (isStale(gen)) return;
+  $('#runsSlot').innerHTML = `
     <div class="panel">
-      <div class="panel-head"><span class="panel-title">all runs</span></div>
+      <div class="panel-head"><span class="panel-title">all runs</span><span class="panel-actions t-mute">${runs.length} run${runs.length === 1 ? '' : 's'}</span></div>
       <div class="panel-body dense">${runsTableHTML(runs, { showTest: true })}</div>
     </div>
   `;
 }
 
 /* ─────────────────────────── RUN DETAIL view ─────────────────────────── */
-function renderRunDetail(testName, runId, parentRoute) {
-  const test = DATA.per_test.find((t) => t.name === testName);
-  const run = test?.runs.find((r) => r.run_id === runId);
+async function renderRunDetail(testName, runId, parentRoute, gen) {
+  view().innerHTML = `
+    <div class="crumbs">
+      <a href="#/${esc(parentRoute || 'tests')}">${esc(parentRoute === 'runs' ? 'all runs' : 'tests')}</a><span class="sep">/</span>
+      <a href="#/tests/${esc(testName)}">${esc(testName)}</a><span class="sep">/</span>
+      <span class="cur">${esc(runId)}</span>
+    </div>
+    ${SKELETON}
+  `;
+  const [run, test] = await Promise.all([
+    loadRun(testName, runId),
+    loadTest(testName),
+  ]);
+  if (isStale(gen)) return;
   if (!run || !test) {
     view().innerHTML = `<div class="panel"><div class="panel-body t-mute">run not found.</div></div>`;
     return;
@@ -622,8 +718,22 @@ function recentContribHTML(rows) {
 }
 
 /* ────────────────────── contributor profile (sub-route) ────────────────────── */
-function renderContributorProfile(handle) {
-  const p = DATA.contributors.profiles.find((x) => x.handle === handle);
+async function renderContributorProfile(handle, gen) {
+  view().innerHTML = `
+    <div class="crumbs">
+      <a href="#/contributors">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span>
+    </div>
+    ${SKELETON}
+  `;
+  let p;
+  try {
+    p = await loadContributor(handle);
+  } catch (err) {
+    if (isStale(gen)) return;
+    view().innerHTML = `<div class="crumbs"><a href="#/contributors">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span></div>${errorPanelHTML(err)}`;
+    return;
+  }
+  if (isStale(gen)) return;
   if (!p) {
     view().innerHTML = `<div class="crumbs"><a href="#/contributors">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span></div>
       <div class="panel"><div class="panel-body t-mute">contributor not found.</div></div>`;
@@ -670,7 +780,7 @@ function renderContributorProfile(handle) {
 
     <div class="split-2">
       <div class="panel">
-        <div class="panel-head"><span class="panel-title">tests covered</span><span class="panel-actions t-mute">${tests.size} of ${DATA.per_test.length}</span></div>
+        <div class="panel-head"><span class="panel-title">tests covered</span><span class="panel-actions t-mute">${tests.size} of ${DATA.tests.length}</span></div>
         <div class="panel-body dense">
           <table>
             <thead><tr><th>test</th><th class="num">runs</th></tr></thead>

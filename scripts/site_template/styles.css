@@ -102,7 +102,7 @@ a:hover { text-decoration: underline; }
 .brand { display: flex; flex-direction: column; }
 .brand-name {
   font-weight: 700; font-size: 25px;
-  line-height: 1em;
+  line-height: 1.2em;
   color: var(--text);
 }
 .brand-name-accent { color: var(--cyan); text-shadow: var(--glow-cyan); }

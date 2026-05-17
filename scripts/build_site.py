@@ -655,6 +655,54 @@ def fmt_duration(seconds: Optional[float]) -> str:
     return f"{h}h {m:02d}m"
 
 
+TAGLINE = "Community contributed benchmarks of agentic AI coding setups"
+
+
+def _write_json(path: Path, data: Any) -> int:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    blob = json.dumps(data, separators=(",", ":"), default=str)
+    path.write_text(blob, encoding="utf-8")
+    return len(blob)
+
+
+def _compact_run(r: dict) -> dict:
+    """Trim a run summary down to what listings need (no stage details/notes/hw/settings).
+    Stages keep only id+rating so the run-rating dots still render."""
+    return {
+        "run_id":             r["run_id"],
+        "test_name":          r["test_name"],
+        "test_title":         r["test_title"],
+        "agent":              r["agent"],
+        "model":              r["model"],
+        "provider":           r["provider"],
+        "contributor_handle": r["contributor_handle"],
+        "contributor_url":    r["contributor_url"],
+        "date":               r["date"],
+        "stages_run":         r["stages_run"],
+        "stages_total":       r["stages_total"],
+        "avg_rating_score":   r["avg_rating_score"],
+        "total_cost_usd":     r["total_cost_usd"],
+        "total_duration_sec": r["total_duration_sec"],
+        "stages":             [{"id": s["id"], "rating": s["rating"]} for s in r["stages"]],
+    }
+
+
+def _compact_test(t: dict) -> dict:
+    return {
+        "name":         t["name"],
+        "title":        t["title"],
+        "description":  t["description"],
+        "domain":       t["domain"],
+        "stages_total": t["stages_total"],
+        "run_count":    t["run_count"],
+        "top_score":    t["runs"][0]["avg_rating_score"] if t["runs"] else None,
+    }
+
+
+def _compact_profile(p: dict) -> dict:
+    return {k: v for k, v in p.items() if k != "runs"}
+
+
 def render(out_dir: Path, github_url: str) -> None:
     loaded = load_all()
     build_date = date.today().isoformat()
@@ -668,22 +716,70 @@ def render(out_dir: Path, github_url: str) -> None:
     contributors = build_contributors(loaded)
     activity     = build_activity(loaded)
 
-    data_for_js = {
+    # ── index payload — always loaded by the SPA. Small, no per-run details. ──
+    index_data = {
         "build_date":   build_date,
         "github_url":   github_url,
-        "tagline":      "Community contributed benchmarks of agentic AI coding setups",
+        "tagline":      TAGLINE,
+        "rating_color": RATING_COLOR,
+        "rating_score": RATING_SCORE,
         "summary":      summary,
         "leaderboard":  leaderboard,
         "scatter":      scatter,
         "theme_stats":  theme_stats,
-        "per_test":     per_test,
-        "all_runs":     all_runs,
-        "contributors": contributors,
         "activity":     activity,
-        "rating_score": RATING_SCORE,
-        "rating_color": RATING_COLOR,
+        "tests":        [_compact_test(t) for t in per_test],
+        "contributors": {
+            "profiles": [_compact_profile(p) for p in contributors["profiles"]],
+            "recent":   contributors["recent"],
+        },
     }
 
+    out_dir.mkdir(parents=True, exist_ok=True)
+    sizes: dict[str, int] = {}
+    sizes["index.json"]  = _write_json(out_dir / "index.json", index_data)
+    sizes["runs.json"]   = _write_json(out_dir / "runs.json", {
+        "runs": [_compact_run(r) for r in all_runs],
+    })
+
+    # ── per-test detail (prompts + compact runs list) ──
+    for t in per_test:
+        _write_json(out_dir / "tests" / f"{t['name']}.json", {
+            "name":         t["name"],
+            "title":        t["title"],
+            "description":  t["description"],
+            "domain":       t["domain"],
+            "stages_total": t["stages_total"],
+            "run_count":    t["run_count"],
+            "test_stages":  t["test_stages"],
+            "runs":         [_compact_run(r) for r in t["runs"]],
+        })
+
+    # ── per-run detail (full stage data, hardware, settings, notes) ──
+    for r in all_runs:
+        _write_json(out_dir / "runs" / r["test_name"] / f"{r['run_id']}.json", r)
+
+    # ── per-contributor detail (profile + their compact runs list) ──
+    for p in contributors["profiles"]:
+        _write_json(out_dir / "contributors" / f"{p['handle']}.json", {
+            **_compact_profile(p),
+            "runs": [_compact_run(r) for r in p["runs"]],
+        })
+
+    # ── stats.json — full dump for raw data access (not fetched by the SPA) ──
+    sizes["stats.json"] = _write_json(out_dir / "stats.json", {
+        "generated_at": build_date,
+        "summary":      summary,
+        "leaderboard":  leaderboard,
+        "scatter":      scatter,
+        "theme_stats":  theme_stats,
+        "activity":     activity,
+        "all_runs":     all_runs,
+        "tests":        per_test,
+        "contributors": contributors,
+    })
+
+    # ── HTML shell — only the small index payload is inlined ──
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         undefined=StrictUndefined,
@@ -692,25 +788,26 @@ def render(out_dir: Path, github_url: str) -> None:
     tmpl = env.get_template("index.html")
     html_out = tmpl.render(
         project_name="AgentArena",
-        tagline="Community contributed benchmarks of agentic AI coding setups",
+        tagline=TAGLINE,
         github_url=github_url,
         build_date=build_date,
         summary=summary,
-        data_json=json.dumps(data_for_js, separators=(",", ":"), default=str),
+        data_json=json.dumps(index_data, separators=(",", ":"), default=str),
     )
-
-    out_dir.mkdir(parents=True, exist_ok=True)
+    sizes["index.html"] = len(html_out)
     (out_dir / "index.html").write_text(html_out, encoding="utf-8")
-    (out_dir / "stats.json").write_text(json.dumps({
-        "generated_at": build_date,
-        **{k: v for k, v in data_for_js.items() if k not in ("rating_score", "rating_color")},
-    }, indent=2, default=str), encoding="utf-8")
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")  # GitHub Pages: skip Jekyll
 
-    print(f"✓ Wrote {out_dir / 'index.html'}")
-    print(f"✓ Wrote {out_dir / 'stats.json'}")
+    n_tests = len(per_test)
+    n_runs  = len(all_runs)
+    n_contribs = len(contributors["profiles"])
+    print(f"✓ Wrote {out_dir / 'index.html'} ({sizes['index.html']:,} bytes)")
+    print(f"✓ Wrote {out_dir / 'index.json'} ({sizes['index.json']:,} bytes — boot payload)")
+    print(f"✓ Wrote {out_dir / 'runs.json'} ({sizes['runs.json']:,} bytes — runs tab)")
+    print(f"✓ Wrote {n_tests} tests/, {n_runs} runs/, {n_contribs} contributors/ shards")
     print(f"  {summary['tests']} tests · {summary['runs']} runs · "
           f"{summary['stages']} stages · {summary['contributors']} contributors")
+    print(f"  Local preview: python3 -m http.server -d {out_dir} 8000  →  http://localhost:8000")
 
 
 # --------------------------------------------------------------------------- #
