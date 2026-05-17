@@ -1,9 +1,28 @@
 # Contributing
-Please feel free to contribute your tests to this repository. You can either contribute entire new tests, or your runs of existing tests.
+Please feel free to contribute your own tests and runs of existing tests to this repository.
 
-The easiest way is the CLI: `scripts/cli.py run add` and `scripts/cli.py test add` walk you through it interactively. See [Browse with the CLI](README.md#browse-with-the-cli) for setup. The sections below describe the same workflow manually, in case you'd rather edit files directly — run `scripts/cli.py validate` after any manual edit to check the result.
+Contributions should be submitted as a GitHub Pull Request against `main`: Fork the repo, add your run or test on a branch, push it to your fork, and open a PR.
 
-## Contribute your run of an existing test
+The easiest way to prepare a contribution is the CLI:
+
+```sh
+# Browse current tests and runs
+scripts/cli.py browse
+
+# Add your run of an existing test
+scripts/cli.py run add
+
+# Add a new test for others to run (or add your own runs also)
+scripts/cli.py test add
+```
+
+See [Browse with the CLI](README.md#browse-with-the-cli) to setup the CLI.
+
+---
+
+You can also contribute tests and runs by adding the YAML files and directories manually, and run `scripts/cli.py validate` after any manual edit to check for errors before submitting. Here's how to do it:
+
+## Manually contribute your run of an existing test
 
 1. Pick a test under `/tests/<test name>/`. Open its `test.yaml` to see the test description and each stage's prompt.
 
@@ -77,7 +96,7 @@ If your github username were `anthony` and you ran the first two stages of the `
                 /stage-2-advanced-features
 ```
 
-## Contribute a new test
+## Manually contribute a new test
 
 1. Create a directory under `/tests/<your test name>/` (use `kebab-case`).
 
