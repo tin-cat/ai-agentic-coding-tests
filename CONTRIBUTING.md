@@ -36,8 +36,10 @@ You can also contribute tests and runs by adding the YAML files and directories 
 
 ### `run.yaml` schema
 
+> **`contributor_url` is your identity.** It can be any URL that uniquely identifies you — your GitHub profile, personal site, Mastodon, X/Twitter, etc. The site uses this URL to group all your runs and tests together into a single contributor profile and to rank you on the contributors leaderboard. **Use the exact same `contributor_url` for every contribution you make**, otherwise your runs will get split across multiple "people" and your handle won't accumulate.
+
 ```yaml
-contributor_url: https://github.com/your-username   # any URL identifying you (GitHub profile, personal site, Mastodon, etc.)
+contributor_url: https://github.com/your-username   # see the note above — must match across all your contributions
 date: 2026-05-16              # the day the run was performed (YYYY-MM-DD)
 
 agent:
