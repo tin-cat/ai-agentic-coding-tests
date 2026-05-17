@@ -5,9 +5,11 @@
 
 [➜ See current test results](https://agentarena.tin.cat)
 
-Choosing the right AI coding agent setup has too many moving parts to evaluate alone. Between the agent, model, provider, configurations, and hardware, there are too many variables—and vendor benchmarks rarely reflect real-world workloads. This repository collects community-contributed runs of the same real coding tasks across the combinations that matter, so you can compare them head-to-head.
+Pick your favorite AI coding setup — agent, model, provider or your own self-hosted rig if you're feeling spicy. Run one of the tests, and send a PR with the results. Your handle goes on the [leaderboard](https://agentarena.tin.cat). Your rig joins the silicon beasts roster.
 
-Each test unfolds in stages: an unattended first build, then progressively harder refinements so results reflect not just whether a setup ships something, but whether it holds up under realistic follow-up work. [Contributors](CONTRIBUTING.md) add their own runs and new tests, and coverage grows with what the community cares about: cloud vs. self-hosted, frontier vs. open-weight, high-effort vs. fast, all rated against the same prompts on the same scale.
+Each test is a multi-stage gauntlet: an unattended first build, then progressively harder refinements. Setups that one-shot the easy stuff but fall apart on follow-up work get exposed.
+
+The leaderboard is fun, but the goal is real: a community-run, real-world view of how agentic AI coding setups *actually* perform on tasks they'll be asked to do — the kind of comparison vendor benchmarks rarely give you. Cloud vs. self-hosted, frontier vs. open-weight, high-effort vs. fast — all on the same prompts, on the same scale.
 
 ---
 
