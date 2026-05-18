@@ -238,6 +238,12 @@ a:hover { text-decoration: underline; }
 }
 .status-divider { color: var(--border-2); }
 .status-text { color: var(--text-dim); }
+.pixel-heart {
+  color: var(--magenta);
+  filter: drop-shadow(0 0 4px rgba(255,106,213,.55));
+  vertical-align: -1px;
+  margin-right: 2px;
+}
 .status-text-mute { color: var(--text-mute); }
 .statusbar a.status-text:hover { color: var(--cyan); text-decoration: none; }
 
