@@ -331,8 +331,6 @@ function feedItemHTML(c) {
 /* ─────────────────────────── 02 · LEADERBOARD ─────────────────────────── */
 function renderLeaderboard() {
   const rows = DATA.leaderboard;
-  const profiles = (DATA.contributors && DATA.contributors.profiles) || [];
-  const topContribs = profiles.slice(0, 8);
 
   view().innerHTML = `
     ${viewHead('leaderboard', '02', 'Aggregated across every contributed stage. Ranked by average rating score (excellent = 1.0, good = 0.75, partial = 0.4, failed = 0.0).')}
@@ -348,21 +346,6 @@ function renderLeaderboard() {
     <div class="panel">
       <div class="panel-head"><span class="panel-title">full table</span></div>
       <div class="panel-body dense">${leaderboardTableHTML(rows)}</div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title alt">contributors leaderboard</span>
-        <span class="panel-actions">
-          <span class="t-mute">${profiles.length} contributor${profiles.length === 1 ? '' : 's'}</span>
-          <a class="t-cyan" href="#/contributors" style="margin-left:10px;">see all →</a>
-        </span>
-      </div>
-      <div class="panel-body dense">${contribCardsHTML(topContribs)}</div>
-      <div class="panel-body" style="border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
-        <div class="t-dim" style="font-size: 12px;">▌ want to see your handle on this board? add a run and you're in.</div>
-        <a class="cta cta-primary" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your runs</a>
-      </div>
     </div>
   `;
   mountLeaderBar(rows);

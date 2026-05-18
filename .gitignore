@@ -1,4 +1,5 @@
-# Self-bootstrapped venv used by scripts/cli.py and scripts/build_site.py
+# Self-bootstrapped venvs — agent-arena-cli.py uses /.venv/, build_site.py uses scripts/.venv/
+/.venv/
 scripts/.venv/
 
 # Generated stats site (rebuilt by GitHub Actions on every push to main)

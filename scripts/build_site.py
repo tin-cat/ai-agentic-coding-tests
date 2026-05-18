@@ -131,8 +131,9 @@ from pydantic import BaseModel, Field, ValidationError, field_validator, model_v
 from ruamel.yaml import YAML
 
 # --------------------------------------------------------------------------- #
-# Schemas — kept in sync with scripts/cli.py. Duplicated rather than imported
-# so this script stays standalone and doesn't drag typer/questionary along.
+# Schemas — kept in sync with /agent-arena-cli.py. Duplicated rather than
+# imported so this script stays standalone and doesn't drag typer/questionary
+# along.
 # --------------------------------------------------------------------------- #
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

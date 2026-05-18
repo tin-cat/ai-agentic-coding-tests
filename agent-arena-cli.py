@@ -13,10 +13,10 @@
 
 Just run it — dependencies install themselves on first run:
 
-    scripts/cli.py browse            # TUI for tests, runs, and their details
-    scripts/cli.py test add          # interactively create a new test
-    scripts/cli.py run add           # interactively record a run for a test
-    scripts/cli.py validate          # validate every test.yaml / run.yaml
+    ./agent-arena-cli.py browse            # TUI for tests, runs, and their details
+    ./agent-arena-cli.py test add          # interactively create a new test
+    ./agent-arena-cli.py run add           # interactively record a run for a test
+    ./agent-arena-cli.py validate          # validate every test.yaml / run.yaml
 """
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ import sys
 from pathlib import Path
 
 # ----------------------------------------------------------------------------
-# Self-bootstrap: on first run (or after deps change), create scripts/.venv/
-# and install dependencies there, then re-exec the script with that venv's
+# Self-bootstrap: on first run (or after deps change), create .venv/ alongside
+# this script and install dependencies there, then re-exec with that venv's
 # Python so the rest of the file can import normally.
 # ----------------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ def _bootstrap() -> None:
     if not _VENV_PY.exists():
         _check_python_version()
         _check_venv_module()
-        sys.stderr.write("Setting up CLI dependencies in scripts/.venv (first run)...\n")
+        sys.stderr.write("Setting up CLI dependencies in ./.venv (first run)...\n")
         try:
             subprocess.run(
                 [sys.executable, "-m", "venv", str(_VENV)],
@@ -119,7 +119,7 @@ def _bootstrap() -> None:
             )
         except subprocess.CalledProcessError as e:
             _fail_setup(
-                "Failed to create the virtual environment at scripts/.venv.",
+                "Failed to create the virtual environment at ./.venv.",
                 detail=f"`python -m venv` exited with status {e.returncode}",
                 hint=(
                     "Common causes:\n"
@@ -139,13 +139,13 @@ def _bootstrap() -> None:
             )
         except subprocess.CalledProcessError as e:
             _fail_setup(
-                "Failed to install CLI dependencies into scripts/.venv.",
+                "Failed to install CLI dependencies into ./.venv.",
                 detail=f"`pip install` exited with status {e.returncode}",
                 hint=(
                     "Common causes:\n"
                     "  - No internet connection (pip couldn't reach PyPI)\n"
                     "  - Corporate proxy or firewall blocking pip\n"
-                    "  - A corrupted venv — try deleting scripts/.venv and re-running\n"
+                    "  - A corrupted venv — try deleting ./.venv and re-running\n"
                     "\n"
                     "To install the dependencies manually:\n"
                     f"  {_VENV_PY} -m pip install {' '.join(_DEPS)}"
@@ -206,7 +206,7 @@ from ruamel.yaml.scalarstring import LiteralScalarString
 # Constants
 # --------------------------------------------------------------------------- #
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent
 TESTS_DIR = REPO_ROOT / "tests"
 
 LOGO = (
@@ -1739,7 +1739,7 @@ def run_add_cmd() -> None:
             "stage subdirectories that were created.[/dim]"
         )
         console.print(
-            "[dim]After making changes, run [bold]scripts/cli.py validate[/bold] "
+            "[dim]After making changes, run [bold]./agent-arena-cli.py validate[/bold] "
             "to check that they still match the schema.[/dim]"
         )
 
@@ -1758,7 +1758,7 @@ def test_add_cmd() -> None:
         console.print(f"\n[green]✓[/green] Wrote {result}")
         console.print(
             f"\n[dim]You can edit {result} manually at any time.[/dim]\n"
-            "[dim]After making changes, run [bold]scripts/cli.py validate[/bold] "
+            "[dim]After making changes, run [bold]./agent-arena-cli.py validate[/bold] "
             "to check that they still match the schema.[/dim]"
         )
 
