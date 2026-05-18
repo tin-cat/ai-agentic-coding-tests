@@ -43,7 +43,13 @@ You can also contribute tests and runs by adding the YAML files and directories 
 
 1. Pick a test under `/tests/<test name>/`. Open its `test.yaml` to see the test description and each stage's prompt.
 
-2. For each stage, feed the prompt to the LLM **exactly as written**, in order. Each stage continues from the previous stage's output, don't start from a fresh codebase.
+2. For each stage, feed the prompt to the LLM **exactly as written**, in order. Each stage continues from the previous stage's *output* (the **codebase** is preserved), but you must start from a **fresh agent session** every time. Dully close your coding agent and start it again before each stage, so no in-memory context, conversation history, or cached planning carries over.
+
+    > [!NOTE]
+    > When recording `duration_sec`, report **API time only** — the time the agent actually spent calling the model. Do **not** include time you spent reading responses, approving tool confirmations, sipping coffee, etc. In the Claude Code CLI, the `/usage` command shows exactly this. Use the equivalent in your agent if available; if there isn't one, estimate as best you can and say so in the notes.
+
+    > [!NOTE]
+    > If you used any **additional MCP servers, skills, custom subagents, hooks, or similar** beyond the agent's defaults, you must document them in the run (add them to `settings:`, e.g. `mcps: linear,sentry` / `skills: simplify,review`, or describe them in the stage `notes`).
 
 3. Create a run directory at `/tests/<test name>/results/<run-id>/`. The run ID is a short, unique slug that makes your run easy to identify, typically `<your-github-username>-<agent>-<model>-<settings>`, e.g. `tin-cat-claude-code-sonnet-4.6-high-effort`. If you have multiple runs with the same configuration, append a suffix such as `-2` or a date.
 
@@ -66,8 +72,10 @@ agent:
 
 provider: anthropic           # must match an `id` from /providers.json (see that file for the full list, descriptions, and homepages)
 model: sonnet-4.6             # the official model identifier — see the note below
-settings:                     # any agent or model settings that affect behavior
-  effort: high
+settings:                     # any agent or model settings that affect behavior; also list any
+  effort: high                #   extra MCP servers, skills, subagents, or hooks you used
+  mcps: linear,sentry         #   (omit these lines if you ran a vanilla agent with no extras)
+  skills: simplify,review
 
 # Required when provider is "self-hosted" (you run the inference on your own or rented infra); omit otherwise.
 framework: lm-studio          # inference engine (e.g. lm-studio, ollama, llama.cpp, vllm, mlx)
@@ -84,7 +92,9 @@ hardware:
 
 stages:
   - id: stage-1-first-run     # must match a stage id from test.yaml
-    duration_sec: 447         # wall-clock duration of the run, in seconds
+    duration_sec: 447         # API time only — what the agent spent calling the model, in seconds.
+                              # Do NOT include time spent reading responses or approving confirmations.
+                              # Claude Code: see `/usage`. Other agents: use the equivalent if available.
     tokens_in: 12300          # optional; input tokens (cumulative across the stage)
     tokens_out: 26300         # output tokens (cumulative across the stage)
     cost_usd: 0.63            # total USD cost for the stage

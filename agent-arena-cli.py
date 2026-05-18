@@ -1246,11 +1246,20 @@ class RunStageEditScreen(ModalScreen[Optional[_RunStageDraft]]):
             yield Header()
             with VerticalScroll():
                 yield Label(f"Stage: {self.stage_id}", classes="section-title")
-                yield Label("Duration (mm:ss or seconds):", classes="field-label")
+                yield Label(
+                    "Reminder: run this stage from a fresh agent session (close & reopen the agent).",
+                    classes="help-text",
+                )
+                yield Label("API time (mm:ss or seconds):", classes="field-label")
                 yield Input(
                     value=str(self.initial.duration_sec) if (self.initial and self.initial.duration_sec) else "",
                     placeholder="e.g. 7:27 or 447",
                     id="duration",
+                )
+                yield Label(
+                    "Time the agent spent calling the model (API time), not time you spent reading"
+                    "responses or approving confirmations.",
+                    classes="help-text",
                 )
                 yield Label("Input tokens (optional, e.g. 12300 or 12.3k):", classes="field-label")
                 yield Input(
@@ -1459,6 +1468,12 @@ class RunAddScreen(Screen):
             )
             yield Label("Settings (one 'key=value' per line, optional):", classes="field-label")
             yield TextArea("", id="settings-area")
+            yield Label(
+                "If you used any extra MCP servers, skills, custom subagents, or hooks beyond the "
+                "agent's defaults, list them here (e.g. 'mcps=linear,sentry', 'skills=simplify,review'). "
+                "Runs with undisclosed tooling aren't comparable to vanilla runs.",
+                classes="help-text",
+            )
             with Container(id="self-hosted-section", classes="hidden"):
                 yield Label("Self-hosted details", classes="section-title")
                 yield Label("Inference framework:", classes="field-label")
@@ -1475,6 +1490,14 @@ class RunAddScreen(Screen):
                 yield Input(id="hw-ram")
             yield Label("Stages", classes="section-title")
             yield Label("Select a row, then 'Record' to fill in its metrics.", classes="help-text")
+            yield Label(
+                "Start every stage from a fresh agent session: fully close your coding agent and "
+                "reopen it before each stage, so no prior context carries over (the codebase is "
+                "preserved, but the session is not). Record API time only: the time the agent spent "
+                "calling the model, not time you spent reading responses or approving tool "
+                "confirmations.",
+                classes="help-text",
+            )
             yield DataTable(id="run-stages-table", zebra_stripes=True)
             with Horizontal(classes="button-row"):
                 yield Button("Record selected", id="record-stage", variant="primary")
