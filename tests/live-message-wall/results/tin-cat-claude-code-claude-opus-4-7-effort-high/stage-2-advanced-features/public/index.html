@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>wall</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar" role="banner">
+    <span class="prompt" aria-hidden="true">&gt;</span>
+    <input
+      id="message-input"
+      class="input"
+      type="text"
+      maxlength="2000"
+      autocomplete="off"
+      spellcheck="false"
+      placeholder="type a message and press ENTER ..."
+      aria-label="message"
+    />
+    <button id="submit-btn" class="btn" type="button">[ add to wall ]</button>
+    <span id="status" class="status" aria-live="polite">connecting...</span>
+  </header>
+
+  <main id="wall" class="wall" tabindex="0" aria-label="message wall">
+    <div id="wall-inner" class="wall-inner"></div>
+  </main>
+
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="full message">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">--- message ---</span>
+        <button id="modal-close" class="btn btn-close" type="button" aria-label="close">[ x ]</button>
+      </div>
+      <pre id="modal-text" class="modal-text"></pre>
+      <div class="modal-footer">
+        <span id="modal-meta" class="modal-meta"></span>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

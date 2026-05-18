@@ -1,0 +1,13 @@
+{
+  "name": "wall",
+  "version": "1.0.0",
+  "description": "A public wall where anyone can post a message — TUI-styled, live-updating.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  }
+}
