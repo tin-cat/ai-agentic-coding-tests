@@ -195,6 +195,7 @@ async function route() {
   const gen = ++_routeGen;
   destroyAllCharts();
   const path = parsePath();
+  updateRatingScaleVisibility(path);
   $('#main').scrollTop = 0;
   for (const r of routes) {
     const m = path.match(r.pat);
@@ -330,28 +331,63 @@ function heroHTML() {
   const tagline = DATA.tagline || 'Community contributed benchmarks of agentic AI coding setups';
   return `
     <section class="hero-panel">
-      <div class="hero-grid">
-        <div class="hero-main">
-          <div class="hero-eyebrow">▌ welcome</div>
-          <h1 class="hero-title">${esc(tagline)}.</h1>
-          <p class="hero-lead">Live rankings for every model, agent, rig, and contributor in the arena so far. Browse the board, drill into runs, peek at the silicon — then add your own to claim a slot.</p>
-          <div class="hero-ctas">
-            <a class="cta cta-primary" href="/leaderboard/">→ see the leaderboard</a>
-            <a class="cta" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your tests</a>
-          </div>
+      <div class="hero-main">
+        <div class="hero-eyebrow">▌ welcome</div>
+        <h1 class="hero-title">${esc(tagline)}.</h1>
+        <p class="hero-lead">Live rankings for every model, agent, rig, and contributor in the arena so far. Browse the board, drill into runs, peek at the silicon — then add your own to claim a slot.</p>
+        <div class="hero-ctas">
+          <a class="cta cta-primary" href="/leaderboard/">→ see the leaderboard</a>
+          <a class="cta" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your tests</a>
         </div>
-        <aside class="hero-side">
-          <div class="hero-eyebrow">rating scale</div>
-          <ul class="legend">
-            <li><span class="dot" style="background:${RATING_COLOR.excellent}"></span><span class="lg-label">excellent</span><span class="lg-score">1.00</span><span class="lg-blurb">clean one-shot</span></li>
-            <li><span class="dot" style="background:${RATING_COLOR.good}"></span><span class="lg-label">good</span><span class="lg-score">0.75</span><span class="lg-blurb">minor follow-up</span></li>
-            <li><span class="dot" style="background:${RATING_COLOR.partial}"></span><span class="lg-label">partial</span><span class="lg-score">0.40</span><span class="lg-blurb">major gaps</span></li>
-            <li><span class="dot" style="background:${RATING_COLOR.failed}"></span><span class="lg-label">failed</span><span class="lg-score">0.00</span><span class="lg-blurb">could not complete</span></li>
-          </ul>
-        </aside>
       </div>
     </section>
   `;
+}
+
+const RATING_SCALE_ROWS = [
+  ['excellent', '1.00', 'clean one-shot'],
+  ['good',      '0.75', 'minor follow-up'],
+  ['partial',   '0.40', 'major gaps'],
+  ['failed',    '0.00', 'could not complete'],
+];
+function ratingScaleHTML() {
+  return `
+    <div class="rating-scale-label">rating scale</div>
+    <ul class="legend legend-inline">
+      ${RATING_SCALE_ROWS.map(([k, s, blurb]) => `
+        <li>
+          <span class="dot" style="background:${RATING_COLOR[k]}"></span>
+          <span class="lg-label">${k}</span>
+          <span class="lg-score">${s}</span>
+          <span class="lg-blurb">${blurb}</span>
+        </li>`).join('')}
+    </ul>
+  `;
+}
+function mountRatingScale() {
+  const el = $('#ratingScale');
+  if (el && !el.dataset.mounted) {
+    el.innerHTML = ratingScaleHTML();
+    el.dataset.mounted = '1';
+  }
+}
+
+// Routes that aggregate enough leaderboard-style context to not need the
+// rating-scale legend at the bottom. Detail pages (e.g. /agents/<id>/) are
+// excluded — they still show per-run rating dots where the legend is useful.
+const RATING_SCALE_HIDDEN_PATHS = [
+  /^\/?$/, /^\/overview\/?$/,
+  /^\/leaderboard\/?$/,
+  /^\/contributors\/?$/,
+  /^\/hardware\/?$/,
+  /^\/agents\/?$/,
+  /^\/providers\/?$/,
+  /^\/models\/?$/,
+];
+function updateRatingScaleVisibility(path) {
+  const el = $('#ratingScale');
+  if (!el) return;
+  el.hidden = RATING_SCALE_HIDDEN_PATHS.some((re) => re.test(path));
 }
 
 function overviewLeaderHTML(rows) {
@@ -1363,7 +1399,7 @@ function mountScatter() {
       scales: {
         x: { ...COMMON_SCALES,
              title: { display: true, text: 'avg cost / stage (USD)', color: '#5d6878', font: { size: 10 } },
-             ticks: { ...COMMON_SCALES.ticks, callback: (v) => '$' + (v < 1 ? v.toFixed(2) : v) } },
+             ticks: { ...COMMON_SCALES.ticks, callback: (v) => '$' + (v < 1 ? v.toFixed(4) : v.toFixed(2)) } },
         y: { ...COMMON_SCALES, min: 0, max: 1,
              title: { display: true, text: 'avg rating score', color: '#5d6878', font: { size: 10 } } },
       },
@@ -1591,4 +1627,5 @@ window.addEventListener('keydown', (e) => {
 /* ════════════════════════════════════════════════════════════════════════
    Boot
    ════════════════════════════════════════════════════════════════════════ */
+mountRatingScale();
 route();
