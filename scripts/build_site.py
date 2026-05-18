@@ -1378,6 +1378,11 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         t = " ".join(text.split())
         return t if len(t) <= n else t[: n - 1].rstrip() + "…"
 
+    # Canonical URLs of pages that should appear in sitemap.xml. Pages whose
+    # canonical points elsewhere (the alt-form run URLs) are intentionally
+    # excluded so the sitemap only advertises one URL per piece of content.
+    sitemap_urls: list[str] = []
+
     def write_route(rel_path: str, *, page_title: str, page_description: str,
                     og_type: str = "website", og_image: Optional[str] = None,
                     canonical: Optional[str] = None) -> None:
@@ -1387,7 +1392,8 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         if rel_path and not rel_path.endswith("/"):
             rel_path += "/"
         page_path = "/" + rel_path if rel_path else "/"
-        canonical_url = canonical or _abs(page_path)
+        self_url = _abs(page_path)
+        canonical_url = canonical or self_url
         html = tmpl.render(
             project_name="AgentArena",
             tagline=TAGLINE,
@@ -1403,6 +1409,9 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         out_file = out_dir / rel_path / "index.html" if rel_path else out_dir / "index.html"
         out_file.parent.mkdir(parents=True, exist_ok=True)
         out_file.write_text(html, encoding="utf-8")
+        # Only list this URL in the sitemap if it's its own canonical.
+        if canonical_url == self_url:
+            sitemap_urls.append(self_url)
 
     # Section landings and the overview.
     write_route("",                page_title=f"AgentArena — {TAGLINE}",
@@ -1497,6 +1506,24 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     )
     (out_dir / "404.html").write_text(fallback_html, encoding="utf-8")
 
+    # ── sitemap.xml + robots.txt ──
+    # Only canonical URLs are listed (the alt-form run URLs are excluded above),
+    # so the sitemap advertises each piece of content exactly once.
+    from xml.sax.saxutils import escape as _xml_escape
+    sm_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for url in sitemap_urls:
+        sm_lines.append(f"  <url><loc>{_xml_escape(url)}</loc><lastmod>{build_date}</lastmod></url>")
+    sm_lines.append("</urlset>\n")
+    (out_dir / "sitemap.xml").write_text("\n".join(sm_lines), encoding="utf-8")
+
+    (out_dir / "robots.txt").write_text(
+        f"User-agent: *\nAllow: /\nSitemap: {site_url}/sitemap.xml\n",
+        encoding="utf-8",
+    )
+
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")  # GitHub Pages: skip Jekyll
 
     n_tests = len(per_test)
@@ -1510,6 +1537,7 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     # (each run is duplicated under runs/ and tests/.../runs/).
     n_html = 9 + n_tests + 2 * n_runs + n_contribs + n_agents + n_providers + n_models + 1  # +1 for 404
     print(f"✓ Wrote {n_html} HTML files (per-route shells + 404.html)")
+    print(f"✓ Wrote sitemap.xml ({len(sitemap_urls)} canonical URLs) + robots.txt")
     print(f"✓ Wrote app.js, styles.css, boot.js (boot payload {sizes['boot.js']:,} bytes)")
     print(f"✓ Wrote {out_dir / 'index.json'} ({sizes['index.json']:,} bytes)")
     print(f"✓ Wrote {out_dir / 'runs.json'} ({sizes['runs.json']:,} bytes)")
