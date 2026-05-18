@@ -299,6 +299,11 @@ function renderOverview() {
       </div>
     </div>
 
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">contributors leaderboard</span><a class="t-cyan" href="/contributors/">all contributors →</a></div>
+      <div class="panel-body dense">${contribCardsHTML((DATA.contributors.profiles || []).slice(0, 5))}</div>
+    </div>
+
     ${top ? `
     <div class="panel">
       <div class="panel-head"><span class="panel-title alt">leader · ${esc(top.agent)} / ${esc(top.model)}</span></div>
@@ -929,14 +934,19 @@ function avatarThumb(p, size = 26) {
 
 function contribCardsHTML(rows) {
   if (!rows.length) return '<div style="padding:14px;color:var(--text-mute)">none yet.</div>';
-  return `<ul class="contrib-rank">${rows.map((r) => `
+  return `<ul class="contrib-rank">${rows.map((r) => {
+    const sub = [];
+    if (r.top_combo) sub.push(esc(r.top_combo));
+    if (r.top_rig) sub.push(esc(r.top_rig));   // weapon of choice (self-hosted rigs only)
+    sub.push(`active until ${fmtDate(r.latest_date)}`);
+    return `
     <li>
       <a class="contrib-row" href="/contributors/${encodeURIComponent(r.handle)}/">
         <span class="contrib-rank-n${r.rank === 1 ? ' top' : ''}">#${r.rank}</span>
         ${avatarThumb(r, 36)}
         <div class="contrib-id">
           <div class="handle">${esc(r.handle)}</div>
-          <div class="sub">${r.top_combo ? esc(r.top_combo) + ' · ' : ''}active until ${fmtDate(r.latest_date)}</div>
+          <div class="sub">${sub.join(' · ')}</div>
         </div>
         <div class="contrib-nums">
           <div><b>${r.run_count}</b><span>runs</span></div>
@@ -945,7 +955,8 @@ function contribCardsHTML(rows) {
         </div>
         <div class="contrib-score">${bar(r.avg_rating_score)}</div>
       </a>
-    </li>`).join('')}</ul>`;
+    </li>`;
+  }).join('')}</ul>`;
 }
 
 function recentContribHTML(rows) {
