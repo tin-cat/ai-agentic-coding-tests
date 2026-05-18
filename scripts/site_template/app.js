@@ -2,7 +2,10 @@
    AgentArena dashboard — terminal-themed SPA
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const DATA = JSON.parse(document.getElementById('bootData').textContent);
+// DATA is provided by /boot.js (loaded before this script). It's the same
+// payload that used to be inlined as <script id="bootData"> — moved out so it
+// can be cached separately across the now-many per-route HTML files.
+const DATA = window.DATA || {};
 const RATING_COLOR = DATA.rating_color || {
   excellent: '#34d399', good: '#a7f3d0', partial: '#fbbf24', failed: '#f87171',
 };
@@ -116,13 +119,15 @@ function loadJSON(path) {
   _jsonCache.set(path, p);
   return p;
 }
-const loadRuns        = ()         => loadJSON('runs.json').then((d) => d.runs);
-const loadTest        = (name)     => loadJSON(`tests/${encodeURIComponent(name)}.json`);
-const loadRun         = (t, id)    => loadJSON(`runs/${encodeURIComponent(t)}/${encodeURIComponent(id)}.json`);
-const loadContributor = (handle)   => loadJSON(`contributors/${encodeURIComponent(handle)}.json`);
-const loadAgent       = (id)       => loadJSON(`agents/${encodeURIComponent(id)}.json`);
-const loadProvider    = (id)       => loadJSON(`providers/${encodeURIComponent(id)}.json`);
-const loadModel       = (id)       => loadJSON(`models/${encodeURIComponent(id)}.json`);
+// JSON shard URLs are site-root-absolute (leading "/") so they resolve the
+// same way no matter how deep the current route's pathname is.
+const loadRuns        = ()         => loadJSON('/runs.json').then((d) => d.runs);
+const loadTest        = (name)     => loadJSON(`/tests/${encodeURIComponent(name)}.json`);
+const loadRun         = (t, id)    => loadJSON(`/runs/${encodeURIComponent(t)}/${encodeURIComponent(id)}.json`);
+const loadContributor = (handle)   => loadJSON(`/contributors/${encodeURIComponent(handle)}.json`);
+const loadAgent       = (id)       => loadJSON(`/agents/${encodeURIComponent(id)}.json`);
+const loadProvider    = (id)       => loadJSON(`/providers/${encodeURIComponent(id)}.json`);
+const loadModel       = (id)       => loadJSON(`/models/${encodeURIComponent(id)}.json`);
 
 const SKELETON = `<div class="panel"><div class="panel-body t-mute">loading…</div></div>`;
 
@@ -142,29 +147,42 @@ function errorPanelHTML(err) {
 /* ════════════════════════════════════════════════════════════════════════
    Router — hash-based, with parameterized routes + async handlers
    ════════════════════════════════════════════════════════════════════════ */
+// Route patterns are trailing-slash tolerant so users can paste either form
+// in the address bar. Internal links use the trailing-slash form (canonical,
+// matches GitHub Pages' directory-index convention).
 const routes = [
-  { pat: /^\/?$|^\/overview$/,                          name: 'overview',     handler: (_m, gen) => renderOverview(gen) },
-  { pat: /^\/leaderboard$/,                             name: 'leaderboard',  handler: (_m, gen) => renderLeaderboard(gen) },
-  { pat: /^\/tests$/,                                   name: 'tests',        handler: (_m, gen) => renderTests(null, gen) },
-  { pat: /^\/tests\/([^/]+)$/,                          name: 'tests',        handler: (m, gen) => renderTests(m[1], gen) },
-  { pat: /^\/tests\/([^/]+)\/runs\/([^/]+)$/,           name: 'tests',        handler: (m, gen) => renderRunDetail(m[1], m[2], 'tests', gen) },
-  { pat: /^\/runs$/,                                    name: 'runs',         handler: (_m, gen) => renderRuns(gen) },
-  { pat: /^\/runs\/([^/]+)\/([^/]+)$/,                  name: 'runs',         handler: (m, gen) => renderRunDetail(m[1], m[2], 'runs', gen) },
-  { pat: /^\/contributors$/,                            name: 'contributors', handler: (_m, gen) => renderContributors(gen) },
-  { pat: /^\/contributors\/([^/]+)$/,                   name: 'contributors', handler: (m, gen) => renderContributorProfile(decodeURIComponent(m[1]), gen) },
-  { pat: /^\/agents$/,                                  name: 'agents',       handler: (_m, gen) => renderAgents(null, gen) },
-  { pat: /^\/agents\/([^/]+)$/,                         name: 'agents',       handler: (m, gen) => renderAgents(decodeURIComponent(m[1]), gen) },
-  { pat: /^\/providers$/,                               name: 'providers',    handler: (_m, gen) => renderProviders(null, gen) },
-  { pat: /^\/providers\/([^/]+)$/,                      name: 'providers',    handler: (m, gen) => renderProviders(decodeURIComponent(m[1]), gen) },
-  { pat: /^\/models$/,                                  name: 'models',       handler: (_m, gen) => renderModels(null, gen) },
-  { pat: /^\/models\/([^/]+)$/,                         name: 'models',       handler: (m, gen) => renderModels(decodeURIComponent(m[1]), gen) },
-  { pat: /^\/hardware$/,                                name: 'hardware',     handler: (_m, gen) => renderHardware(gen) },
+  { pat: /^\/?$|^\/overview\/?$/,                            name: 'overview',     handler: (_m, gen) => renderOverview(gen) },
+  { pat: /^\/leaderboard\/?$/,                               name: 'leaderboard',  handler: (_m, gen) => renderLeaderboard(gen) },
+  { pat: /^\/tests\/?$/,                                     name: 'tests',        handler: (_m, gen) => renderTests(null, gen) },
+  { pat: /^\/tests\/([^/]+)\/?$/,                            name: 'tests',        handler: (m, gen) => renderTests(m[1], gen) },
+  { pat: /^\/tests\/([^/]+)\/runs\/([^/]+)\/?$/,             name: 'tests',        handler: (m, gen) => renderRunDetail(m[1], m[2], 'tests', gen) },
+  { pat: /^\/runs\/?$/,                                      name: 'runs',         handler: (_m, gen) => renderRuns(gen) },
+  { pat: /^\/runs\/([^/]+)\/([^/]+)\/?$/,                    name: 'runs',         handler: (m, gen) => renderRunDetail(m[1], m[2], 'runs', gen) },
+  { pat: /^\/contributors\/?$/,                              name: 'contributors', handler: (_m, gen) => renderContributors(gen) },
+  { pat: /^\/contributors\/([^/]+)\/?$/,                     name: 'contributors', handler: (m, gen) => renderContributorProfile(decodeURIComponent(m[1]), gen) },
+  { pat: /^\/agents\/?$/,                                    name: 'agents',       handler: (_m, gen) => renderAgents(null, gen) },
+  { pat: /^\/agents\/([^/]+)\/?$/,                           name: 'agents',       handler: (m, gen) => renderAgents(decodeURIComponent(m[1]), gen) },
+  { pat: /^\/providers\/?$/,                                 name: 'providers',    handler: (_m, gen) => renderProviders(null, gen) },
+  { pat: /^\/providers\/([^/]+)\/?$/,                        name: 'providers',    handler: (m, gen) => renderProviders(decodeURIComponent(m[1]), gen) },
+  { pat: /^\/models\/?$/,                                    name: 'models',       handler: (_m, gen) => renderModels(null, gen) },
+  { pat: /^\/models\/([^/]+)\/?$/,                           name: 'models',       handler: (m, gen) => renderModels(decodeURIComponent(m[1]), gen) },
+  { pat: /^\/hardware\/?$/,                                  name: 'hardware',     handler: (_m, gen) => renderHardware(gen) },
 ];
 
-function parseHash() {
-  const h = (location.hash || '#/overview').replace(/^#/, '');
-  return h || '/overview';
+function parsePath() {
+  return location.pathname || '/';
 }
+
+// Programmatic navigation — used by onclick handlers on table rows and by the
+// click delegator below for in-page <a href="/..."> links. Avoids a full page
+// reload, updates the URL via pushState, then triggers route().
+function navigate(path) {
+  if (path !== location.pathname + location.search) {
+    history.pushState(null, '', path);
+  }
+  route();
+}
+window.navigate = navigate;
 
 // Each route() call gets a monotonically-increasing token. Async handlers check
 // `currentGen()` before mutating the DOM to avoid stale renders when the user
@@ -176,7 +194,7 @@ const isStale = (gen) => gen !== _routeGen;
 async function route() {
   const gen = ++_routeGen;
   destroyAllCharts();
-  const path = parseHash();
+  const path = parsePath();
   $('#main').scrollTop = 0;
   for (const r of routes) {
     const m = path.match(r.pat);
@@ -209,17 +227,24 @@ function highlightNav(name) {
   statusRoute().textContent = '▌ ' + name;
 }
 
-window.addEventListener('hashchange', route);
+// Back/forward buttons → re-route from the new pathname.
+window.addEventListener('popstate', route);
 
-// Clicking a nav link whose href matches the current hash doesn't fire
-// hashchange, so the view never re-renders. Force a re-route in that case.
+// Intercept clicks on internal links so we navigate via the History API
+// instead of doing a full page reload. Modifier-clicked or new-tab clicks fall
+// through to the browser's default behaviour.
 document.addEventListener('click', (e) => {
-  const a = e.target.closest('a[href^="#/"]');
+  if (e.defaultPrevented) return;
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target.closest('a');
   if (!a) return;
-  if (a.getAttribute('href') === location.hash) {
-    e.preventDefault();
-    route();
-  }
+  const href = a.getAttribute('href');
+  if (!href || !href.startsWith('/')) return;       // external or fragment
+  if (a.target && a.target !== '_self') return;
+  if (a.hasAttribute('download')) return;
+  if (a.host && a.host !== location.host) return;   // resolved cross-origin
+  e.preventDefault();
+  navigate(href);
 });
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -265,11 +290,11 @@ function renderOverview() {
 
     <div class="split-2">
       <div class="panel">
-        <div class="panel-head"><span class="panel-title">top of the leaderboard</span><a class="t-cyan" href="#/leaderboard">view all →</a></div>
+        <div class="panel-head"><span class="panel-title">top of the leaderboard</span><a class="t-cyan" href="/leaderboard/">view all →</a></div>
         <div class="panel-body dense">${overviewLeaderHTML(DATA.leaderboard.slice(0, 5))}</div>
       </div>
       <div class="panel">
-        <div class="panel-head"><span class="panel-title">latest contributions</span><a class="t-cyan" href="#/contributors">all contributors →</a></div>
+        <div class="panel-head"><span class="panel-title">latest contributions</span><a class="t-cyan" href="/contributors/">all contributors →</a></div>
         <div class="panel-body dense"><div class="feed">${recent.slice(0, 6).map(feedItemHTML).join('') || '<div style="padding:14px;color:var(--text-mute)">none yet.</div>'}</div></div>
       </div>
     </div>
@@ -306,7 +331,7 @@ function heroHTML() {
           <h1 class="hero-title">${esc(tagline)}.</h1>
           <p class="hero-lead">Live rankings for every model, agent, rig, and contributor in the arena so far. Browse the board, drill into runs, peek at the silicon — then add your own to claim a slot.</p>
           <div class="hero-ctas">
-            <a class="cta cta-primary" href="#/leaderboard">→ see the leaderboard</a>
+            <a class="cta cta-primary" href="/leaderboard/">→ see the leaderboard</a>
             <a class="cta" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your tests</a>
           </div>
         </div>
@@ -342,7 +367,7 @@ function overviewLeaderHTML(rows) {
 function feedItemHTML(c) {
   return `<div class="feed-item">
     <span class="glyph">▸</span>
-    <span><a href="#/contributors/${encodeURIComponent(c.handle)}">${esc(c.handle)}</a> <span class="who">ran</span> <a href="#/tests/${esc(c.test_name)}/runs/${esc(c.run_id)}">${esc(c.test_name)}</a> <span class="who">on</span> ${esc(c.agent)}/${esc(c.model)}</span>
+    <span><a href="/contributors/${encodeURIComponent(c.handle)}/">${esc(c.handle)}</a> <span class="who">ran</span> <a href="/tests/${esc(c.test_name)}/runs/${esc(c.run_id)}/">${esc(c.test_name)}</a> <span class="who">on</span> ${esc(c.agent)}/${esc(c.model)}</span>
     <span class="meta">${esc(c.date)}</span>
   </div>`;
 }
@@ -400,20 +425,15 @@ async function renderTests(selectedName, gen) {
   const tests = DATA.tests;
   const selected = tests.find((t) => t.name === selectedName) || tests[0];
 
-  // Master list renders synchronously from the index. The detail slot shows a
-  // skeleton, then swaps in once `tests/<name>.json` resolves.
+  // Horizontal tab strip (same pattern as agents/providers/models), then a
+  // detail slot below that lazy-loads tests/<name>.json.
   view().innerHTML = `
     ${viewHead('tests', '03', 'Browse community-defined tests, their stage prompts, and the runs contributed against each.')}
 
-    <div class="master-detail">
-      <div class="panel" style="margin-bottom:0">
-        <div class="panel-head"><span class="panel-title">${tests.length} tests</span></div>
-        <div class="panel-body dense">
-          <div class="test-list">${tests.map((t) => testListItemHTML(t, selected && t.name === selected.name)).join('')}</div>
-        </div>
-      </div>
-      <div id="testDetailSlot">${selected ? SKELETON : '<div class="panel"><div class="panel-body t-mute">no tests yet.</div></div>'}</div>
-    </div>
+    <nav class="catalog-tabs" aria-label="tests">
+      ${tests.map((t) => testTabHTML(t, selected && t.name === selected.name)).join('')}
+    </nav>
+    <div id="testDetailSlot">${selected ? SKELETON : '<div class="panel"><div class="panel-body t-mute">no tests yet.</div></div>'}</div>
   `;
   if (!selected) return;
 
@@ -430,18 +450,24 @@ async function renderTests(selectedName, gen) {
   }
 }
 
-function testListItemHTML(t, isActive) {
-  return `<a class="test-list-item ${isActive ? 'active' : ''}" href="#/tests/${esc(t.name)}">
-    <div class="name">${esc(t.name)}${t.domain ? ` · ${esc(t.domain)}` : ''}</div>
-    <div class="title">${esc(t.title)}</div>
-    <div class="meta">${t.run_count} run${t.run_count === 1 ? '' : 's'} · ${t.stages_total} stage${t.stages_total === 1 ? '' : 's'}${t.top_score != null ? ` · top ${fmtScore(t.top_score)}` : ''}${t.contributor_handle ? ` · by ${esc(t.contributor_handle)}` : ''}</div>
+function testTabHTML(t, isActive) {
+  return `<a class="catalog-tab ${isActive ? 'active' : ''}" href="/tests/${esc(t.name)}/">
+    <div class="catalog-tab-head">
+      <div class="catalog-tab-name">${esc(t.title)}</div>
+      ${t.domain ? `<div class="catalog-tab-type">${esc(t.domain)}</div>` : ''}
+    </div>
+    <div class="catalog-tab-badges">
+      <span class="catalog-tab-badge">${t.run_count} run${t.run_count === 1 ? '' : 's'}</span>
+      <span class="catalog-tab-badge">${t.stages_total} stage${t.stages_total === 1 ? '' : 's'}</span>
+      ${t.top_score != null ? `<span class="catalog-tab-badge">top ${fmtScore(t.top_score)}</span>` : ''}
+    </div>
   </a>`;
 }
 
 function testDetailHTML(t) {
   return `
     <div class="crumbs">
-      <a href="#/tests">tests</a><span class="sep">/</span><span class="cur">${esc(t.name)}</span>
+      <a href="/tests/">tests</a><span class="sep">/</span><span class="cur">${esc(t.name)}</span>
     </div>
     <div class="panel">
       <div class="panel-head">
@@ -454,7 +480,7 @@ function testDetailHTML(t) {
       <div class="panel-body">
         <p style="margin:0 0 16px; color:var(--text-dim)">${esc(t.description)}</p>
         <div class="kv-grid">
-          ${t.contributor_handle ? `<div><span class="k">authored by</span><span class="v"><a href="#/contributors/${encodeURIComponent(t.contributor_handle)}">${esc(t.contributor_handle)}</a></span></div>` : ''}
+          ${t.contributor_handle ? `<div><span class="k">authored by</span><span class="v"><a href="/contributors/${encodeURIComponent(t.contributor_handle)}/">${esc(t.contributor_handle)}</a></span></div>` : ''}
           <div><span class="k">stages</span><span class="v">${t.stages_total}</span></div>
           <div><span class="k">contributed runs</span><span class="v">${t.run_count}</span></div>
           <div><span class="k">top score</span><span class="v t-cyan">${fmtScore(t.runs[0]?.avg_rating_score)}</span></div>
@@ -489,7 +515,7 @@ function testDetailHTML(t) {
       </div>
       <div class="panel">
         <div class="panel-head"><span class="panel-title alt">contributed runs</span><span class="panel-actions t-mute">${t.runs.length} run${t.runs.length === 1 ? '' : 's'}</span></div>
-        <div class="panel-body dense">${runsTableHTML(t.runs, { showTest: false, linkBase: `#/tests/${t.name}/runs/` })}</div>
+        <div class="panel-body dense">${runsTableHTML(t.runs, { showTest: false, linkBase: `/tests/${t.name}/runs/` })}</div>
       </div>
     </div>
   `;
@@ -553,7 +579,7 @@ const CATALOG_KINDS = {
 };
 
 function catalogTabHTML(kind, item, isActive) {
-  return `<a class="catalog-tab ${isActive ? 'active' : ''}" href="#/${kind.route}/${encodeURIComponent(item.id)}">
+  return `<a class="catalog-tab ${isActive ? 'active' : ''}" href="/${kind.route}/${encodeURIComponent(item.id)}/">
     <div class="catalog-tab-head">
       <div class="catalog-tab-name">${esc(item.name || item.id)}${kind.hasCatalog && !item.in_catalog ? ' <span class="pill muted">unlisted</span>' : ''}</div>
       ${item.category ? `<div class="catalog-tab-type">${esc(item.category)}</div>` : ''}
@@ -572,20 +598,20 @@ function catalogDetailHTML(kind, d) {
   // reads the initial off a data attribute so any character is HTML-safe.
   const initial = (d.name || d.id || '?').trim().charAt(0).toUpperCase();
   const logoHTML = d.logo
-    ? `<img class="catalog-logo" src=".${esc(d.logo)}" alt="${esc(d.name)} logo" data-initial="${esc(initial)}" onerror="logoFallback(this)" />`
+    ? `<img class="catalog-logo" src="${esc(d.logo)}" alt="${esc(d.name)} logo" data-initial="${esc(initial)}" onerror="logoFallback(this)" />`
     : `<span class="catalog-logo fallback">${esc(initial)}</span>`;
 
   const crossRows = d.cross.map((c) => `
-    <tr class="clickable" onclick="location.hash='#/${kind.routeOther}/${encodeURIComponent(c[kind.crossKey])}'">
-      <td><a href="#/${kind.routeOther}/${encodeURIComponent(c[kind.crossKey])}"><code>${esc(c[kind.crossKey])}</code></a></td>
+    <tr class="clickable" onclick="navigate('/${kind.routeOther}/${encodeURIComponent(c[kind.crossKey])}/')">
+      <td><a href="/${kind.routeOther}/${encodeURIComponent(c[kind.crossKey])}/"><code>${esc(c[kind.crossKey])}</code></a></td>
       <td class="num">${c.run_count}</td>
       <td class="num">${c.stage_count}</td>
       <td style="min-width:170px">${bar(c.avg_rating_score)}</td>
     </tr>`).join('');
 
   const testRows = d.tests.map((t) => `
-    <tr class="clickable" onclick="location.hash='#/tests/${encodeURIComponent(t.test_name)}'">
-      <td><a href="#/tests/${encodeURIComponent(t.test_name)}">${esc(t.test_name)}</a></td>
+    <tr class="clickable" onclick="navigate('/tests/${encodeURIComponent(t.test_name)}/')">
+      <td><a href="/tests/${encodeURIComponent(t.test_name)}/">${esc(t.test_name)}</a></td>
       <td class="t-mute">${esc(t.test_title)}</td>
       <td class="num">${t.run_count}</td>
       <td class="num">${t.stage_count}</td>
@@ -594,7 +620,7 @@ function catalogDetailHTML(kind, d) {
 
   return `
     <div class="crumbs">
-      <a href="#/${kind.route}">${esc(kind.crumb)}</a><span class="sep">/</span><span class="cur">${esc(d.id)}</span>
+      <a href="/${kind.route}/">${esc(kind.crumb)}</a><span class="sep">/</span><span class="cur">${esc(d.id)}</span>
     </div>
 
     <section class="catalog-hero">
@@ -708,7 +734,7 @@ const renderProviders = (id, gen) => renderCatalog(CATALOG_KINDS.providers, id, 
 const renderModels    = (id, gen) => renderCatalog(CATALOG_KINDS.models, id, gen);
 
 function runsTableHTML(runs, opts = {}) {
-  const { showTest = true, linkBase = '#/runs/' } = opts;
+  const { showTest = true, linkBase = '/runs/' } = opts;
   if (!runs.length) return '<div style="padding:14px;color:var(--text-mute)">no runs yet.</div>';
   return `<table>
     <thead><tr>
@@ -718,9 +744,9 @@ function runsTableHTML(runs, opts = {}) {
       <th class="num">cost</th><th class="num">time</th><th class="num">date</th>
     </tr></thead>
     <tbody>${runs.map((r) => `
-      <tr class="clickable" onclick="location.hash='#/tests/${esc(r.test_name)}/runs/${esc(r.run_id)}'">
-        ${showTest ? `<td><a href="#/tests/${esc(r.test_name)}">${esc(r.test_name)}</a></td>` : ''}
-        <td><a href="#/tests/${esc(r.test_name)}/runs/${esc(r.run_id)}"><code>${esc(r.run_id)}</code></a></td>
+      <tr class="clickable" onclick="navigate('/tests/${esc(r.test_name)}/runs/${esc(r.run_id)}/')">
+        ${showTest ? `<td><a href="/tests/${esc(r.test_name)}/">${esc(r.test_name)}</a></td>` : ''}
+        <td><a href="/tests/${esc(r.test_name)}/runs/${esc(r.run_id)}/"><code>${esc(r.run_id)}</code></a></td>
         <td><a href="${esc(r.contributor_url)}" rel="noopener">${esc(r.contributor_handle)}</a></td>
         <td>${esc(r.agent)} · <b>${esc(r.model)}</b> <span class="pill muted">${esc(r.provider)}</span></td>
         <td>${ratingDots(r.stages, r.stages_total)}</td>
@@ -753,8 +779,8 @@ async function renderRuns(gen) {
 async function renderRunDetail(testName, runId, parentRoute, gen) {
   view().innerHTML = `
     <div class="crumbs">
-      <a href="#/${esc(parentRoute || 'tests')}">${esc(parentRoute === 'runs' ? 'all runs' : 'tests')}</a><span class="sep">/</span>
-      <a href="#/tests/${esc(testName)}">${esc(testName)}</a><span class="sep">/</span>
+      <a href="/${esc(parentRoute || 'tests')}/">${esc(parentRoute === 'runs' ? 'all runs' : 'tests')}</a><span class="sep">/</span>
+      <a href="/tests/${esc(testName)}/">${esc(testName)}</a><span class="sep">/</span>
       <span class="cur">${esc(runId)}</span>
     </div>
     ${SKELETON}
@@ -769,7 +795,7 @@ async function renderRunDetail(testName, runId, parentRoute, gen) {
     return;
   }
 
-  const back = parentRoute === 'runs' ? '#/runs' : `#/tests/${testName}`;
+  const back = parentRoute === 'runs' ? '/runs/' : `/tests/${testName}/`;
   const backLabel = parentRoute === 'runs' ? 'all runs' : test.name;
   const settings = run.settings && Object.keys(run.settings).length ? run.settings : null;
   const hw = run.hardware;
@@ -777,7 +803,7 @@ async function renderRunDetail(testName, runId, parentRoute, gen) {
   view().innerHTML = `
     <div class="crumbs">
       <a href="${esc(back)}">${esc(backLabel)}</a><span class="sep">/</span>
-      <a href="#/tests/${esc(testName)}">${esc(testName)}</a><span class="sep">/</span>
+      <a href="/tests/${esc(testName)}/">${esc(testName)}</a><span class="sep">/</span>
       <span class="cur">${esc(runId)}</span>
     </div>
 
@@ -905,7 +931,7 @@ function contribCardsHTML(rows) {
   if (!rows.length) return '<div style="padding:14px;color:var(--text-mute)">none yet.</div>';
   return `<ul class="contrib-rank">${rows.map((r) => `
     <li>
-      <a class="contrib-row" href="#/contributors/${encodeURIComponent(r.handle)}">
+      <a class="contrib-row" href="/contributors/${encodeURIComponent(r.handle)}/">
         <span class="contrib-rank-n${r.rank === 1 ? ' top' : ''}">#${r.rank}</span>
         ${avatarThumb(r, 36)}
         <div class="contrib-id">
@@ -927,10 +953,10 @@ function recentContribHTML(rows) {
   return `<table>
     <thead><tr><th>date</th><th>handle</th><th>test · run</th><th>agent · model</th></tr></thead>
     <tbody>${rows.map((c) => `
-      <tr class="clickable" onclick="location.hash='#/tests/${esc(c.test_name)}/runs/${esc(c.run_id)}'">
+      <tr class="clickable" onclick="navigate('/tests/${esc(c.test_name)}/runs/${esc(c.run_id)}/')">
         <td class="t-mute">${esc(c.date)}</td>
-        <td><a href="#/contributors/${encodeURIComponent(c.handle)}">${esc(c.handle)}</a></td>
-        <td><a href="#/tests/${esc(c.test_name)}">${esc(c.test_name)}</a> · <code>${esc(c.run_id)}</code></td>
+        <td><a href="/contributors/${encodeURIComponent(c.handle)}/">${esc(c.handle)}</a></td>
+        <td><a href="/tests/${esc(c.test_name)}/">${esc(c.test_name)}</a> · <code>${esc(c.run_id)}</code></td>
         <td>${esc(c.agent)} · <b>${esc(c.model)}</b> <span class="pill muted">${esc(c.provider)}</span></td>
       </tr>`).join('')}
     </tbody>
@@ -941,7 +967,7 @@ function recentContribHTML(rows) {
 async function renderContributorProfile(handle, gen) {
   view().innerHTML = `
     <div class="crumbs">
-      <a href="#/contributors">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span>
+      <a href="/contributors/">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span>
     </div>
     ${SKELETON}
   `;
@@ -950,12 +976,12 @@ async function renderContributorProfile(handle, gen) {
     p = await loadContributor(handle);
   } catch (err) {
     if (isStale(gen)) return;
-    view().innerHTML = `<div class="crumbs"><a href="#/contributors">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span></div>${errorPanelHTML(err)}`;
+    view().innerHTML = `<div class="crumbs"><a href="/contributors/">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span></div>${errorPanelHTML(err)}`;
     return;
   }
   if (isStale(gen)) return;
   if (!p) {
-    view().innerHTML = `<div class="crumbs"><a href="#/contributors">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span></div>
+    view().innerHTML = `<div class="crumbs"><a href="/contributors/">contributors</a><span class="sep">/</span><span class="cur">${esc(handle)}</span></div>
       <div class="panel"><div class="panel-body t-mute">contributor not found.</div></div>`;
     return;
   }
@@ -968,7 +994,7 @@ async function renderContributorProfile(handle, gen) {
 
   view().innerHTML = `
     <div class="crumbs">
-      <a href="#/contributors">contributors</a><span class="sep">/</span><span class="cur">${esc(p.handle)}</span>
+      <a href="/contributors/">contributors</a><span class="sep">/</span><span class="cur">${esc(p.handle)}</span>
     </div>
 
     <section class="profile-hero">
@@ -1006,8 +1032,8 @@ async function renderContributorProfile(handle, gen) {
           <table>
             <thead><tr><th>test</th><th class="num">runs</th></tr></thead>
             <tbody>${[...tests.values()].sort((a, b) => b.count - a.count).map((t) => `
-              <tr class="clickable" onclick="location.hash='#/tests/${esc(t.name)}'">
-                <td><a href="#/tests/${esc(t.name)}">${esc(t.title)}</a> <span class="pill muted">${esc(t.name)}</span></td>
+              <tr class="clickable" onclick="navigate('/tests/${esc(t.name)}/')">
+                <td><a href="/tests/${esc(t.name)}/">${esc(t.title)}</a> <span class="pill muted">${esc(t.name)}</span></td>
                 <td class="num">${t.count}</td>
               </tr>`).join('')}
             </tbody>
@@ -1069,8 +1095,8 @@ async function renderContributorProfile(handle, gen) {
             <table>
               <thead><tr><th>test</th><th>domain</th><th class="num">stages</th><th class="num">runs</th><th class="num">top score</th></tr></thead>
               <tbody>${authored.map((t) => `
-                <tr class="clickable" onclick="location.hash='#/tests/${esc(t.name)}'">
-                  <td><a href="#/tests/${esc(t.name)}">${esc(t.title)}</a> <span class="pill muted">${esc(t.name)}</span></td>
+                <tr class="clickable" onclick="navigate('/tests/${esc(t.name)}/')">
+                  <td><a href="/tests/${esc(t.name)}/">${esc(t.title)}</a> <span class="pill muted">${esc(t.name)}</span></td>
                   <td>${t.domain ? `<span class="pill">${esc(t.domain)}</span>` : '<span class="t-mute">—</span>'}</td>
                   <td class="num">${t.stages_total}</td>
                   <td class="num">${t.run_count}</td>
@@ -1182,7 +1208,7 @@ function hardwareContributorsHTML(rows) {
   if (!rows.length) return '<div style="padding:14px;color:var(--text-mute)">none yet.</div>';
   return `<ul class="contrib-rank">${rows.map((r) => `
     <li>
-      <a class="contrib-row" href="#/contributors/${encodeURIComponent(r.handle)}">
+      <a class="contrib-row" href="/contributors/${encodeURIComponent(r.handle)}/">
         <span class="contrib-rank-n${r.rank === 1 ? ' top' : ''}">#${r.rank}</span>
         ${avatarThumb(r, 36)}
         <div class="contrib-id">
@@ -1474,7 +1500,7 @@ function mountRunMetricChart(run) {
 /* ════════════════════════════════════════════════════════════════════════
    Keyboard shortcuts + help modal
    ════════════════════════════════════════════════════════════════════════ */
-const NAV_BY_KEY = { '1': '#/overview', '2': '#/leaderboard', '3': '#/tests', '4': '#/runs', '5': '#/contributors', '6': '#/hardware' };
+const NAV_BY_KEY = { '1': '/', '2': '/leaderboard/', '3': '/tests/', '4': '/runs/', '5': '/contributors/', '6': '/hardware/' };
 let _gPrefix = false, _gTimer = null;
 
 document.addEventListener('keydown', (e) => {
@@ -1487,10 +1513,10 @@ document.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape') {
     if (!help.hidden) { help.hidden = true; return; }
-    if (location.hash && location.hash !== '#/overview') history.back();
+    if (location.pathname !== '/') history.back();
     return;
   }
-  if (NAV_BY_KEY[e.key]) { location.hash = NAV_BY_KEY[e.key]; e.preventDefault(); return; }
+  if (NAV_BY_KEY[e.key]) { navigate(NAV_BY_KEY[e.key]); e.preventDefault(); return; }
 
   if (e.key === 'g') {
     _gPrefix = true;
@@ -1499,7 +1525,7 @@ document.addEventListener('keydown', (e) => {
     return;
   }
   if (_gPrefix && e.key === 'h') {
-    location.hash = '#/overview'; _gPrefix = false; e.preventDefault(); return;
+    navigate('/'); _gPrefix = false; e.preventDefault(); return;
   }
 
   const main = $('#main');
@@ -1533,9 +1559,4 @@ window.addEventListener('keydown', (e) => {
 /* ════════════════════════════════════════════════════════════════════════
    Boot
    ════════════════════════════════════════════════════════════════════════ */
-// replaceState (rather than assigning to location.hash) avoids firing an extra
-// hashchange and prevents a junk history entry on first load.
-if (!location.hash || location.hash === '#') {
-  history.replaceState(null, '', '#/overview');
-}
 route();

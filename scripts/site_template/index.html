@@ -3,15 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ project_name }} — {{ tagline }}</title>
-<meta name="description" content="{{ tagline }}. Community benchmark stats for coding agents across providers and models.">
+<title>{{ page_title }}</title>
+<meta name="description" content="{{ page_description }}">
+<link rel="canonical" href="{{ canonical_url }}">
+
+<!-- Open Graph -->
+<meta property="og:type" content="{{ og_type }}">
+<meta property="og:title" content="{{ page_title }}">
+<meta property="og:description" content="{{ page_description }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:site_name" content="{{ project_name }}">
+{% if og_image %}<meta property="og:image" content="{{ og_image }}">{% endif %}
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ page_title }}">
+<meta name="twitter:description" content="{{ page_description }}">
+{% if og_image %}<meta name="twitter:image" content="{{ og_image }}">{% endif %}
+
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-{% include 'styles.css' %}
-</style>
+<link rel="stylesheet" href="/styles.css?v={{ build_date }}">
 </head>
 <body>
 <div class="scanlines" aria-hidden="true"></div>
@@ -24,7 +38,7 @@
     <button class="hamburger" id="hamburger" aria-label="Open menu" aria-controls="navList" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
-    <a class="titlebar-left brand-link" href="#/overview" aria-label="Home — overview">
+    <a class="titlebar-left brand-link" href="/" aria-label="Home — overview">
       <pre class="brand-logo" aria-hidden="true"> <span>▄</span>        <span>▄</span>
   <span>▀▄</span>    <span>▄▀</span>
     <span>▀▄</span><span class="c2">▄</span><span>▀</span>
@@ -51,15 +65,15 @@
   <nav class="sidebar" aria-label="Sections">
     <div class="sidebar-label">─ sections ─</div>
     <ul class="nav-list" id="navList">
-      <li><a class="nav-item" data-route="overview"     href="#/overview"><span class="nav-key">01</span><span class="nav-label">overview</span></a></li>
-      <li><a class="nav-item" data-route="leaderboard"  href="#/leaderboard"><span class="nav-key">02</span><span class="nav-label">leaderboard</span></a></li>
-      <li><a class="nav-item" data-route="tests"        href="#/tests"><span class="nav-key">03</span><span class="nav-label">tests</span><span class="nav-count">{{ summary.tests }}</span></a></li>
-      <li><a class="nav-item" data-route="runs"         href="#/runs"><span class="nav-key">04</span><span class="nav-label">runs</span><span class="nav-count">{{ summary.runs }}</span></a></li>
-      <li><a class="nav-item" data-route="contributors" href="#/contributors"><span class="nav-key">05</span><span class="nav-label">contributors</span><span class="nav-count">{{ summary.contributors }}</span></a></li>
-      <li><a class="nav-item" data-route="hardware"     href="#/hardware"><span class="nav-key">06</span><span class="nav-label">silicon beasts</span></a></li>
-      <li><a class="nav-item" data-route="agents"       href="#/agents"><span class="nav-key">07</span><span class="nav-label">agents</span></a></li>
-      <li><a class="nav-item" data-route="providers"    href="#/providers"><span class="nav-key">08</span><span class="nav-label">providers</span></a></li>
-      <li><a class="nav-item" data-route="models"       href="#/models"><span class="nav-key">09</span><span class="nav-label">models</span></a></li>
+      <li><a class="nav-item" data-route="overview"     href="/"><span class="nav-key">01</span><span class="nav-label">overview</span></a></li>
+      <li><a class="nav-item" data-route="leaderboard"  href="/leaderboard/"><span class="nav-key">02</span><span class="nav-label">leaderboard</span></a></li>
+      <li><a class="nav-item" data-route="tests"        href="/tests/"><span class="nav-key">03</span><span class="nav-label">tests</span><span class="nav-count">{{ summary.tests }}</span></a></li>
+      <li><a class="nav-item" data-route="runs"         href="/runs/"><span class="nav-key">04</span><span class="nav-label">runs</span><span class="nav-count">{{ summary.runs }}</span></a></li>
+      <li><a class="nav-item" data-route="contributors" href="/contributors/"><span class="nav-key">05</span><span class="nav-label">contributors</span><span class="nav-count">{{ summary.contributors }}</span></a></li>
+      <li><a class="nav-item" data-route="hardware"     href="/hardware/"><span class="nav-key">06</span><span class="nav-label">silicon beasts</span></a></li>
+      <li><a class="nav-item" data-route="agents"       href="/agents/"><span class="nav-key">07</span><span class="nav-label">agents</span></a></li>
+      <li><a class="nav-item" data-route="providers"    href="/providers/"><span class="nav-key">08</span><span class="nav-label">providers</span></a></li>
+      <li><a class="nav-item" data-route="models"       href="/models/"><span class="nav-key">09</span><span class="nav-label">models</span></a></li>
     </ul>
 
     <div class="sidebar-label">─ data ─</div>
@@ -81,7 +95,7 @@
     <noscript>
       <div class="panel" style="margin: 40px;">
         <div class="panel-title">⚠ javascript required</div>
-        <p>This dashboard renders client-side from a JSON payload. Enable JavaScript, or grab the raw data from <a href="stats.json">stats.json</a>.</p>
+        <p>This dashboard renders client-side from a JSON payload. Enable JavaScript, or grab the raw data from <a href="/stats.json">stats.json</a>.</p>
       </div>
     </noscript>
     <div id="view"></div>
@@ -121,11 +135,9 @@
 </div>
 
 <!-- ─────────────── data + libs ─────────────── -->
-<script id="bootData" type="application/json">{{ data_json | safe }}</script>
+<script src="/boot.js?v={{ build_date }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-{% include 'app.js' %}
-</script>
+<script src="/app.js?v={{ build_date }}"></script>
 
 </body>
 </html>

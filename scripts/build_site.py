@@ -1214,7 +1214,7 @@ def _compact_catalog_row(r: dict) -> dict:
     }
 
 
-def render(out_dir: Path, github_url: str) -> None:
+def render(out_dir: Path, github_url: str, site_url: str) -> None:
     loaded = load_all()
     build_date = date.today().isoformat()
 
@@ -1344,23 +1344,159 @@ def render(out_dir: Path, github_url: str) -> None:
         "contributors": contributors,
     })
 
-    # ── HTML shell — only the small index payload is inlined ──
+    # ── Externalize JS, CSS, and boot data ──
+    # The per-route HTML files (below) are now thin shells that reference these
+    # shared assets, so the browser can cache them once across the whole site.
+    shutil.copyfile(TEMPLATE_DIR / "app.js",    out_dir / "app.js")
+    shutil.copyfile(TEMPLATE_DIR / "styles.css", out_dir / "styles.css")
+    boot_js = (
+        "// AgentArena boot payload. The SPA reads window.DATA on startup.\n"
+        f"window.DATA = {json.dumps(index_data, separators=(',', ':'), default=str)};\n"
+    )
+    sizes["boot.js"] = len(boot_js)
+    (out_dir / "boot.js").write_text(boot_js, encoding="utf-8")
+
+    # ── Pre-generate one HTML file per SPA route ──
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         undefined=StrictUndefined,
         autoescape=select_autoescape(enabled_extensions=("html",)),
     )
     tmpl = env.get_template("index.html")
-    html_out = tmpl.render(
+
+    def _abs(url_path: Optional[str]) -> Optional[str]:
+        """site-root-relative path → absolute URL on the deployed site."""
+        if not url_path:
+            return None
+        if url_path.startswith(("http://", "https://")):
+            return url_path
+        return site_url.rstrip("/") + url_path
+
+    def _trim(text: Optional[str], n: int = 200) -> str:
+        if not text:
+            return ""
+        t = " ".join(text.split())
+        return t if len(t) <= n else t[: n - 1].rstrip() + "…"
+
+    def write_route(rel_path: str, *, page_title: str, page_description: str,
+                    og_type: str = "website", og_image: Optional[str] = None,
+                    canonical: Optional[str] = None) -> None:
+        """Render the SPA shell for one URL and write it to <out>/<rel>/index.html.
+        rel_path is "" for the root, otherwise a trailing-slashed path like
+        "agents/claude-code/". canonical defaults to site_url + "/" + rel_path."""
+        if rel_path and not rel_path.endswith("/"):
+            rel_path += "/"
+        page_path = "/" + rel_path if rel_path else "/"
+        canonical_url = canonical or _abs(page_path)
+        html = tmpl.render(
+            project_name="AgentArena",
+            tagline=TAGLINE,
+            github_url=github_url,
+            build_date=build_date,
+            summary=summary,
+            page_title=page_title,
+            page_description=_trim(page_description),
+            canonical_url=canonical_url,
+            og_type=og_type,
+            og_image=_abs(og_image),
+        )
+        out_file = out_dir / rel_path / "index.html" if rel_path else out_dir / "index.html"
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        out_file.write_text(html, encoding="utf-8")
+
+    # Section landings and the overview.
+    write_route("",                page_title=f"AgentArena — {TAGLINE}",
+                                   page_description=f"{TAGLINE}. Compare AI coding agents, providers, and models on the same tests, contributed by the community.")
+    write_route("leaderboard/",    page_title="Leaderboard — AgentArena",
+                                   page_description="Leaderboard of agent · provider · model combos aggregated across every contributed run.")
+    write_route("tests/",          page_title="Tests — AgentArena",
+                                   page_description="Browse community-defined coding tests, their stage prompts, and the runs contributed against each.")
+    write_route("runs/",           page_title="Runs — AgentArena",
+                                   page_description="Every contributed run across every test, with per-stage timing, cost, and rating.")
+    write_route("contributors/",   page_title="Contributors — AgentArena",
+                                   page_description="People running these tests against agents. Each contributor's profile lists their rigs, tests, and runs.")
+    write_route("hardware/",       page_title="Silicon beasts — AgentArena",
+                                   page_description="Self-hosted rigs powering local inference in this benchmark — devices, GPUs, frameworks, throughput.")
+    write_route("agents/",         page_title="Coding agents — AgentArena",
+                                   page_description="Per-agent breakdown of contributed activity, with the providers used alongside each.")
+    write_route("providers/",      page_title="Inference providers — AgentArena",
+                                   page_description="Per-provider breakdown of contributed activity, with the agents observed against each.")
+    write_route("models/",         page_title="Models — AgentArena",
+                                   page_description="Per-model breakdown of contributed activity, with the providers serving each.")
+
+    # Per-test detail pages.
+    for t in per_test:
+        write_route(f"tests/{t['name']}/",
+                    page_title=f"{t['title']} — AgentArena",
+                    page_description=f"{t['title']}. {_trim(t['description'], 160)} — {t['run_count']} run{'s' if t['run_count'] != 1 else ''} contributed.",
+                    og_type="article")
+
+    # Per-run detail pages. Each run is reachable via two URLs (the runs-tab
+    # form and the tests-tab form); we generate both, but point canonical at
+    # the runs-tab form so search engines de-dupe.
+    for r in all_runs:
+        primary = f"/runs/{r['test_name']}/{r['run_id']}/"
+        title = f"{r['agent']} · {r['model']} on {r['test_name']} — AgentArena"
+        desc = (f"Run by {r['contributor_handle']} on {r['date']}: {r['agent']} "
+                f"with {r['model']} via {r['provider']}, "
+                f"{r['stages_run']}/{r['stages_total']} stages.")
+        write_route(f"runs/{r['test_name']}/{r['run_id']}/",
+                    page_title=title, page_description=desc, og_type="article")
+        write_route(f"tests/{r['test_name']}/runs/{r['run_id']}/",
+                    page_title=title, page_description=desc, og_type="article",
+                    canonical=_abs(primary))
+
+    # Per-contributor profiles.
+    for p in contributors["profiles"]:
+        title = f"{p['handle']} — AgentArena"
+        desc = (f"{p['handle']}'s contribution profile: {p['run_count']} run"
+                f"{'s' if p['run_count'] != 1 else ''} across {p['test_count']} test"
+                f"{'s' if p['test_count'] != 1 else ''}"
+                f"{', avg score ' + format(p['avg_rating_score'], '.2f') if p['avg_rating_score'] is not None else ''}.")
+        write_route(f"contributors/{p['handle']}/",
+                    page_title=title, page_description=desc,
+                    og_type="profile", og_image=p.get("avatar_url"))
+
+    # Per-agent, per-provider, per-model detail pages.
+    def _catalog_desc(row: dict, kind_lead: str) -> str:
+        base = row.get("description") or kind_lead
+        return (f"{row['name']}: {_trim(base, 130)} — "
+                f"{row['run_count']} run{'s' if row['run_count'] != 1 else ''} "
+                f"across {row['test_count']} test{'s' if row['test_count'] != 1 else ''}.")
+
+    for a in per_agent:
+        write_route(f"agents/{a['id']}/",
+                    page_title=f"{a['name']} (coding agent) — AgentArena",
+                    page_description=_catalog_desc(a, "coding agent"),
+                    og_type="article", og_image=a.get("logo"))
+    for p in per_provider:
+        write_route(f"providers/{p['id']}/",
+                    page_title=f"{p['name']} (inference provider) — AgentArena",
+                    page_description=_catalog_desc(p, "inference provider"),
+                    og_type="article", og_image=p.get("logo"))
+    for m in per_model:
+        write_route(f"models/{m['id']}/",
+                    page_title=f"{m['name']} (model) — AgentArena",
+                    page_description=_catalog_desc(m, "model"),
+                    og_type="article", og_image=m.get("logo"))
+
+    # SPA fallback for unknown paths. GitHub Pages serves this for 404s; the
+    # SPA will then resolve location.pathname and either render the matching
+    # route or show its "no route" panel.
+    fallback_html = tmpl.render(
         project_name="AgentArena",
         tagline=TAGLINE,
         github_url=github_url,
         build_date=build_date,
         summary=summary,
-        data_json=json.dumps(index_data, separators=(",", ":"), default=str),
+        page_title="Not found — AgentArena",
+        page_description=TAGLINE,
+        canonical_url=site_url,
+        og_type="website",
+        og_image=None,
     )
-    sizes["index.html"] = len(html_out)
-    (out_dir / "index.html").write_text(html_out, encoding="utf-8")
+    (out_dir / "404.html").write_text(fallback_html, encoding="utf-8")
+
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")  # GitHub Pages: skip Jekyll
 
     n_tests = len(per_test)
@@ -1369,9 +1505,14 @@ def render(out_dir: Path, github_url: str) -> None:
     n_agents = len(per_agent)
     n_providers = len(per_provider)
     n_models = len(per_model)
-    print(f"✓ Wrote {out_dir / 'index.html'} ({sizes['index.html']:,} bytes)")
-    print(f"✓ Wrote {out_dir / 'index.json'} ({sizes['index.json']:,} bytes — boot payload)")
-    print(f"✓ Wrote {out_dir / 'runs.json'} ({sizes['runs.json']:,} bytes — runs tab)")
+    # Per-route HTML files written: 9 section landings + per-entity pages
+    # (one per test, contributor, agent, provider, model) + per-run pages
+    # (each run is duplicated under runs/ and tests/.../runs/).
+    n_html = 9 + n_tests + 2 * n_runs + n_contribs + n_agents + n_providers + n_models + 1  # +1 for 404
+    print(f"✓ Wrote {n_html} HTML files (per-route shells + 404.html)")
+    print(f"✓ Wrote app.js, styles.css, boot.js (boot payload {sizes['boot.js']:,} bytes)")
+    print(f"✓ Wrote {out_dir / 'index.json'} ({sizes['index.json']:,} bytes)")
+    print(f"✓ Wrote {out_dir / 'runs.json'} ({sizes['runs.json']:,} bytes)")
     print(f"✓ Wrote {n_tests} tests/, {n_runs} runs/, {n_contribs} contributors/, "
           f"{n_agents} agents/, {n_providers} providers/, {n_models} models/ shards")
     print(f"  {summary['tests']} tests · {summary['runs']} runs · "
@@ -1394,8 +1535,12 @@ def main() -> None:
         "--github-url", type=str, default=None,
         help="GitHub URL for the project (default: derived from origin remote or $GITHUB_REPOSITORY)",
     )
+    parser.add_argument(
+        "--site-url", type=str, default="https://agentarena.tin.cat",
+        help="Base URL where the site is deployed (used in canonical/OG tags).",
+    )
     args = parser.parse_args()
-    render(args.out, discover_github_url(args.github_url))
+    render(args.out, discover_github_url(args.github_url), args.site_url.rstrip("/"))
 
 
 if __name__ == "__main__":
