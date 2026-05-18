@@ -1,0 +1,299 @@
+{# Contribute-page HTML fragment. Rendered at build time, embedded in
+   boot.js as DATA.contribute_html, and injected via innerHTML by app.js
+   renderContribute(). All Jinja expressions are HTML-escaped (autoescape
+   is on for *.html). Variables passed in:
+     - github_url           the project's github root, e.g. https://github.com/tin-cat/agent-arena
+     - git_clone_url        a clone-ready URL (trailing-slash stripped, .git appended)
+     - rating_color         dict of rating → hex string
+     - run_yaml_example     raw text of run.yaml.example
+     - test_yaml_example    raw text of test.yaml.example
+     - directory_tree       raw text of directory-tree.txt
+#}
+<div class="contribute-page">
+
+  {# ─── HERO ─── #}
+  <section class="contrib-hero">
+    <div class="contrib-hero-eyebrow">▌ enter the arena</div>
+    <h1 class="contrib-hero-title">step into the <span class="t-magenta-glow">arena</span>.</h1>
+    <p class="contrib-hero-lead">Every model needs an opponent. Every run needs a recorder. Pick your weapon, run the gauntlet, and stamp your handle into the leaderboard for as long as silicon remembers.</p>
+    <div class="contrib-hero-ctas">
+      <a class="cta cta-primary" href="#path-run-detail">⚔ add a run</a>
+      <a class="cta cta-magenta" href="#path-test-detail">✦ forge a new test</a>
+      <a class="cta" href="{{ github_url }}" rel="noopener">⤴ fork on github</a>
+    </div>
+    <div class="contrib-hero-sigil" aria-hidden="true">
+      <div class="sigil-line">╲╱</div>
+      <div class="sigil-line">▌▌</div>
+      <div class="sigil-line">▌▌</div>
+      <div class="sigil-line">▌▌</div>
+    </div>
+  </section>
+
+  {# ─── HONOR CODE ─── #}
+  <section class="oath-panel">
+    <div class="oath-marker">⚔ THE CONTRIBUTOR'S CODE ⚔</div>
+    <div class="oath-body">
+      <p>There is no referee in this arena. No anti-cheat watches your terminal. No tribunal reviews the tape. <b>The leaderboard rests entirely on your honor.</b></p>
+      <p>Run the stages exactly as written. Report the time, the costs, and the rating you actually got. Be honest. <i>Especially</i> when your favorite stack stumbles — your data is what helps the community.</p>
+      <p>If you fake your way to the top, you might fool the board for a week. But the silicon knows. Your PR will be discarded in shame and preserved in the git log for history to know.</p>
+      <p class="oath-trust">We trust you.</p>
+    </div>
+    <div class="oath-footer">⚔ for honor · for science · for the leaderboard ⚔</div>
+  </section>
+
+  {# ─── QUICK START · CLI ─── #}
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">quick start · the cli</span><span class="panel-actions t-mute">recommended</span></div>
+    <div class="panel-body">
+      <p>The fastest path. The script ships in the repo and bootstraps its own Python venv on first run (Python 3.11+ required).</p>
+      <pre data-copy class="codeblock lang-sh" role="button" tabindex="0" aria-label="Copy code">git clone {{ git_clone_url }}
+cd agent-arena
+./agent-arena-cli.py run add</pre>
+      <div class="cli-grid">
+        <div class="cli-row">
+          <span class="cli-kw">browse</span>
+          <span class="cli-cmd"><code>./agent-arena-cli.py browse</code></span>
+          <span class="cli-desc">TUI for tests, runs, and details</span>
+        </div>
+        <div class="cli-row">
+          <span class="cli-kw">add run</span>
+          <span class="cli-cmd"><code>./agent-arena-cli.py run add</code></span>
+          <span class="cli-desc">interactive run wizard</span>
+        </div>
+        <div class="cli-row">
+          <span class="cli-kw">add test</span>
+          <span class="cli-cmd"><code>./agent-arena-cli.py test add</code></span>
+          <span class="cli-desc">interactive new-test wizard</span>
+        </div>
+        <div class="cli-row">
+          <span class="cli-kw">validate</span>
+          <span class="cli-cmd"><code>./agent-arena-cli.py validate</code></span>
+          <span class="cli-desc">check yaml after manual edits</span>
+        </div>
+      </div>
+      <p class="t-mute t-sm">Once your run is in, open a Pull Request against <code>main</code>. Your handle joins the leaderboard as soon as it's merged.</p>
+    </div>
+  </section>
+
+  {# ─── TWO PATHS DIVERGE ─── #}
+  <section class="paths">
+    <a class="path-card" href="#path-run-detail">
+      <div class="path-tag">path 1 · ⚔</div>
+      <div class="path-name">add a run</div>
+      <div class="path-blurb">You picked an existing test. You ran it through your favorite agent. You have results. Record them.</div>
+      <div class="path-arrow">↓ jump to manual instructions</div>
+    </a>
+    <a class="path-card alt" href="#path-test-detail">
+      <div class="path-tag">path 2 · ✦</div>
+      <div class="path-name">forge a new test</div>
+      <div class="path-blurb">You have a fiendish multi-stage gauntlet in mind. Define it, drop it in, let others run it.</div>
+      <div class="path-arrow">↓ jump to manual instructions</div>
+    </a>
+  </section>
+
+  {# ─── PATH 1 · THE GAUNTLET ─── #}
+  <section class="panel" id="path-run-detail">
+    <div class="panel-head"><span class="panel-title">⚔ path 1 · running an existing test</span></div>
+    <div class="panel-body">
+      <p>If the CLI wizards don't fit your workflow, you can do it by hand. Run <code>./agent-arena-cli.py validate</code> after any manual edit.</p>
+
+      <ol class="gauntlet">
+        <li>
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <div class="step-title">pick a test</div>
+            <div class="step-text">Browse <code>/tests/&lt;test name&gt;/</code> and open its <code>test.yaml</code> to see the description and each stage's prompt.</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <div class="step-title">run each stage in order</div>
+            <div class="step-text">For each stage, feed the prompt to the LLM <b>exactly as written</b>. Each stage continues from the previous stage's <i>output</i> (the codebase is preserved), but you must start from a <b>fresh agent session</b> every time — no in-memory context, conversation history, or cached planning carries over.</div>
+            <div class="step-callout">
+              <span class="step-callout-tag">note · timing</span>
+              Record <b>API time only</b> — the time the agent actually spent calling the model. Do <i>not</i> include time you spent reading responses, approving tool confirmations, sipping coffee, etc. Claude Code: <code>/usage</code> shows exactly this. Other agents: use the equivalent if available; otherwise estimate and say so in the notes.
+            </div>
+            <div class="step-callout magenta">
+              <span class="step-callout-tag">note · extras</span>
+              If you used additional <b>MCP servers, skills, custom subagents, hooks, or similar</b> beyond the agent's defaults, document them. Add them to <code>settings:</code> (e.g. <code>mcps: linear,sentry</code> / <code>skills: simplify,review</code>) or describe them in the stage <code>notes</code>.
+            </div>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <div class="step-title">create a run directory</div>
+            <div class="step-text">Place it at <code>/tests/&lt;test name&gt;/results/&lt;run-id&gt;/</code>. The run id is a short, unique slug — typically <code>&lt;your-github-username&gt;-&lt;agent&gt;-&lt;model&gt;-&lt;settings&gt;</code>, e.g. <code>tin-cat-claude-code-sonnet-4.6-high-effort</code>. For multiple runs of the same config, append <code>-2</code> or a date.</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-num">04</div>
+          <div class="step-body">
+            <div class="step-title">drop in the stage directories</div>
+            <div class="step-text">One subdirectory per stage you ran, named <b>exactly</b> like the stage <code>id</code> in <code>test.yaml</code> (e.g. <code>stage-1-first-run</code>). Inside each, put the complete source code the LLM produced — even if most of it is duplicated from earlier stages.</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-num">05</div>
+          <div class="step-body">
+            <div class="step-title">write run.yaml</div>
+            <div class="step-text">A single manifest at the root of your run directory. Only include stages you actually ran — no empty placeholders. Schema below.</div>
+          </div>
+        </li>
+
+        <li>
+          <div class="step-num">06</div>
+          <div class="step-body">
+            <div class="step-title">open a PR</div>
+            <div class="step-text">Fork, branch, push, open the PR against <code>main</code>. Get into the leaderboard as soon as it lands.</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  {# ─── run.yaml SCHEMA ─── #}
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title alt">run.yaml · the manifest</span></div>
+    <div class="panel-body">
+      <div class="alert">
+        <b>contributor_url is your unique ID.</b> Always use the exact same URL across every contribution so the leaderboard can group your runs and accumulate your ranking. If it's your GitHub profile URL, your avatar shows automatically.
+      </div>
+      <pre data-copy class="codeblock lang-yaml" role="button" tabindex="0" aria-label="Copy code">{{ run_yaml_example }}</pre>
+    </div>
+  </section>
+
+  {# ─── MODEL IDENTIFIER ─── #}
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">the model identifier</span></div>
+    <div class="panel-body">
+      <p>Use the <b>official</b> identifier so runs of the same model can be grouped on the leaderboard.</p>
+      <div class="kv-grid kv-wide">
+        <div>
+          <span class="k">closed / hosted</span>
+          <span class="v">Use the canonical name from the provider's docs — <code>sonnet-4.6</code>, <code>gpt-5-mini</code>, <code>gemini-2.5-pro</code>.</span>
+        </div>
+        <div>
+          <span class="k">open weight</span>
+          <span class="v">Use the Hugging Face repo path in <code>org/repo</code> form — <code>meta-llama/Llama-3.3-70B-Instruct</code>, <code>Qwen/Qwen2.5-Coder-32B-Instruct</code>. Browse <a href="https://huggingface.co/models" rel="noopener">huggingface.co/models</a>.</span>
+        </div>
+        <div>
+          <span class="k">unsure?</span>
+          <span class="v">For a cross-provider catalog, <a href="https://openrouter.ai/models" rel="noopener">openrouter.ai/models</a> is a convenient reference.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ─── AGENT / PROVIDER NOT LISTED ─── #}
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title alt">if your agent or provider isn't listed</span></div>
+    <div class="panel-body">
+      <p>Open a PR adding it to <a href="{{ github_url }}/blob/main/agents.json" rel="noopener"><code>/agents.json</code></a> or <a href="{{ github_url }}/blob/main/providers.json" rel="noopener"><code>/providers.json</code></a>. Each entry needs an <code>id</code> (kebab-case, used in <code>run.yaml</code>), <code>name</code>, <code>description</code>, <code>homepage</code>, and <code>category</code>. Optionally drop an SVG at <code>/logos/agents/&lt;id&gt;.svg</code> or <code>/logos/providers/&lt;id&gt;.svg</code> — see <a href="{{ github_url }}/blob/main/logos/README.md" rel="noopener"><code>/logos/README.md</code></a>. Until then, use <code>other</code> and add a note in <code>settings:</code>.</p>
+    </div>
+  </section>
+
+  {# ─── RATING SCALE GALLERY ─── #}
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">rating scale · how to score a stage</span></div>
+    <div class="panel-body">
+      <div class="rating-gallery">
+        <div class="rating-card" style="--c: {{ rating_color.excellent }}">
+          <div class="rating-card-dot"></div>
+          <div class="rating-card-name">excellent</div>
+          <div class="rating-card-score">1.00</div>
+          <div class="rating-card-blurb">Stage completed cleanly on the original prompt with no follow-up prompting needed.</div>
+        </div>
+        <div class="rating-card" style="--c: {{ rating_color.good }}">
+          <div class="rating-card-dot"></div>
+          <div class="rating-card-name">good</div>
+          <div class="rating-card-score">0.75</div>
+          <div class="rating-card-blurb">Stage completed but required minor follow-up prompting to fix issues.</div>
+        </div>
+        <div class="rating-card" style="--c: {{ rating_color.partial }}">
+          <div class="rating-card-dot"></div>
+          <div class="rating-card-name">partial</div>
+          <div class="rating-card-score">0.40</div>
+          <div class="rating-card-blurb">Stage left major requirements unmet, even after follow-up.</div>
+        </div>
+        <div class="rating-card" style="--c: {{ rating_color.failed }}">
+          <div class="rating-card-dot"></div>
+          <div class="rating-card-name">failed</div>
+          <div class="rating-card-score">0.00</div>
+          <div class="rating-card-blurb">Stage could not be completed.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ─── EXAMPLE TREE ─── #}
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title alt">example · directory layout</span></div>
+    <div class="panel-body">
+      <p>If your github username were <code>anthony</code> and you ran the first two stages of the <code>live-message-wall</code> test with Claude Code Pro on Sonnet 4.6 at "high effort":</p>
+      <pre data-copy class="codeblock lang-tree" role="button" tabindex="0" aria-label="Copy code">{{ directory_tree }}</pre>
+    </div>
+  </section>
+
+  {# ─── PATH 2 · FORGE A TEST ─── #}
+  <section class="panel" id="path-test-detail">
+    <div class="panel-head"><span class="panel-title">✦ path 2 · forging a new test</span></div>
+    <div class="panel-body">
+      <ol class="gauntlet">
+        <li>
+          <div class="step-num">01</div>
+          <div class="step-body">
+            <div class="step-title">create the test directory</div>
+            <div class="step-text">Under <code>/tests/&lt;your-test-name&gt;/</code> — use <code>kebab-case</code>.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">02</div>
+          <div class="step-body">
+            <div class="step-title">write test.yaml</div>
+            <div class="step-text">Describe the test and each stage's prompt. See the schema below, or crib from <a href="{{ github_url }}/blob/main/tests/live-message-wall/test.yaml" rel="noopener"><code>/tests/live-message-wall/test.yaml</code></a>.</div>
+            <div class="step-callout">
+              <span class="step-callout-tag">tip · escalate</span>
+              Start with a gentle <code>stage-1-first-run</code>, then crank up the complexity to strain the model. The interesting signal lives in the late stages.
+            </div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">03</div>
+          <div class="step-body">
+            <div class="step-title">(optional) contribute your own runs</div>
+            <div class="step-text">If you also want to drop runs of the new test, follow path 1 above.</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  {# ─── test.yaml SCHEMA ─── #}
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title alt">test.yaml · the gauntlet definition</span></div>
+    <div class="panel-body">
+      <div class="alert">
+        <b>contributor_url is your unique ID.</b> Same rule as runs — keep it identical across everything you contribute.
+      </div>
+      <pre data-copy class="codeblock lang-yaml" role="button" tabindex="0" aria-label="Copy code">{{ test_yaml_example }}</pre>
+    </div>
+  </section>
+
+  {# ─── FINAL CTA ─── #}
+  <section class="contrib-cta-panel">
+    <div class="contrib-cta-eyebrow">⚔ ready?</div>
+    <div class="contrib-cta-title">fork it. fight it. ship it.</div>
+    <div class="contrib-cta-sub">PRs against <code>main</code>. Be honest, be precise, claim your slot on the board.</div>
+    <div class="contrib-cta-ctas">
+      <a class="cta cta-primary" href="{{ github_url }}" rel="noopener">⤴ fork on github</a>
+      <a class="cta cta-magenta" href="{{ github_url }}/blob/main/agent-arena-cli.py" rel="noopener">⌖ get the cli</a>
+    </div>
+  </section>
+
+</div>

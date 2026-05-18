@@ -141,6 +141,7 @@ from ruamel.yaml import YAML
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TESTS_DIR = REPO_ROOT / "tests"
 TEMPLATE_DIR = Path(__file__).resolve().parent / "site_template"
+CONTRIBUTE_TPL_DIR = TEMPLATE_DIR / "contribute"
 
 RATINGS = ("excellent", "good", "partial", "failed")
 RATING_SCORE = {"excellent": 1.0, "good": 0.75, "partial": 0.4, "failed": 0.0}
@@ -1268,6 +1269,24 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     activity     = build_activity(loaded)
     hardware     = build_hardware(loaded)
 
+    # Jinja env covers every site_template/**/*.html template. Constructed once
+    # and reused for the contribute fragment (below) and the per-route shells.
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATE_DIR)),
+        undefined=StrictUndefined,
+        autoescape=select_autoescape(enabled_extensions=("html",)),
+    )
+
+    # ── Contribute page · render fragment now so the SPA can inject it. ──
+    contribute_html = env.get_template("contribute/contribute.html").render(
+        github_url=github_url,
+        git_clone_url=github_url.rstrip("/") + ".git",
+        rating_color=RATING_COLOR,
+        run_yaml_example=(CONTRIBUTE_TPL_DIR / "run.yaml.example").read_text(encoding="utf-8").rstrip(),
+        test_yaml_example=(CONTRIBUTE_TPL_DIR / "test.yaml.example").read_text(encoding="utf-8").rstrip(),
+        directory_tree=(CONTRIBUTE_TPL_DIR / "directory-tree.txt").read_text(encoding="utf-8").rstrip(),
+    )
+
     # ── index payload — always loaded by the SPA. Small, no per-run details. ──
     index_data = {
         "build_date":   build_date,
@@ -1275,6 +1294,7 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         "tagline":      TAGLINE,
         "rating_color": RATING_COLOR,
         "rating_score": RATING_SCORE,
+        "contribute_html": contribute_html,
         "summary":      summary,
         "leaderboard":  leaderboard,
         "scatter":      scatter,
@@ -1391,11 +1411,6 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     (out_dir / "boot.js").write_text(boot_js, encoding="utf-8")
 
     # ── Pre-generate one HTML file per SPA route ──
-    env = Environment(
-        loader=FileSystemLoader(str(TEMPLATE_DIR)),
-        undefined=StrictUndefined,
-        autoescape=select_autoescape(enabled_extensions=("html",)),
-    )
     tmpl = env.get_template("index.html")
 
     def _abs(url_path: Optional[str]) -> Optional[str]:
@@ -1466,6 +1481,8 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
                                    page_description="Per-provider breakdown of contributed activity, with the agents observed against each.")
     write_route("models/",         page_title="Models — AgentArena",
                                    page_description="Per-model breakdown of contributed activity, with the providers serving each.")
+    write_route("contribute/",     page_title="Contribute — AgentArena",
+                                   page_description="Step into the arena. How to record a run, forge a new test, write run.yaml / test.yaml, and get on the leaderboard.")
 
     # Per-test detail pages.
     for t in per_test:

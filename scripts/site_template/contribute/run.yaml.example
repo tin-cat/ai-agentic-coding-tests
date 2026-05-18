@@ -1,0 +1,34 @@
+contributor_url: https://github.com/your-username   # your unique ID — keep it consistent across all your runs
+date: 2026-05-16                                    # the day the run was performed (YYYY-MM-DD)
+
+agent:
+  name: claude-code           # must match an id from /agents.json
+  plan: pro                   # optional; the agent's plan or tier
+
+provider: anthropic           # must match an id from /providers.json
+model: sonnet-4.6             # the official model identifier (see below)
+settings:                     # any agent / model settings that affect behavior; also any
+  effort: high                # extra MCP servers, skills, subagents, or hooks you used.
+  mcps: linear,sentry         # omit this block entirely if you ran a vanilla agent.
+  skills: simplify,review
+
+# Required when provider is "self-hosted"; omit otherwise.
+framework: lm-studio          # e.g. lm-studio, ollama, llama.cpp, vllm, mlx
+quantization: q4_K_M          # optional; how the model is loaded
+
+# Recommended when provider is "self-hosted"; physical machine only.
+hardware:
+  device: nvidia-spark
+  gpu: rtx-4090
+  vram_gb: 24
+  ram_gb: 64
+
+stages:
+  - id: stage-1-first-run     # must match a stage id from test.yaml
+    duration_sec: 447         # API time ONLY — see the note below
+    tokens_in: 12300          # optional; cumulative across the stage
+    tokens_out: 26300         # optional
+    cost_usd: 0.63            # total USD cost for the stage
+    rating: excellent         # one of: excellent, good, partial, failed
+    notes: |                  # optional free-text
+      Anything noteworthy about this stage's run.

@@ -167,6 +167,7 @@ const routes = [
   { pat: /^\/models\/?$/,                                    name: 'models',       handler: (_m, gen) => renderModels(null, gen) },
   { pat: /^\/models\/([^/]+)\/?$/,                           name: 'models',       handler: (m, gen) => renderModels(decodeURIComponent(m[1]), gen) },
   { pat: /^\/hardware\/?$/,                                  name: 'hardware',     handler: (_m, gen) => renderHardware(gen) },
+  { pat: /^\/contribute\/?$/,                                name: 'contribute',   handler: (_m, gen) => renderContribute(gen) },
 ];
 
 function parsePath() {
@@ -337,7 +338,7 @@ function heroHTML() {
         <p class="hero-lead">Live rankings for every model, agent, rig, and contributor in the arena so far. Browse the board, drill into runs, peek at the silicon — then add your own to claim a slot.</p>
         <div class="hero-ctas">
           <a class="cta cta-primary" href="/leaderboard/">→ see the leaderboard</a>
-          <a class="cta" href="${esc(DATA.github_url)}/blob/main/CONTRIBUTING.md" rel="noopener">+ contribute your tests</a>
+          <a class="cta" href="/contribute/">+ contribute your tests</a>
         </div>
       </div>
     </section>
@@ -383,6 +384,7 @@ const RATING_SCALE_HIDDEN_PATHS = [
   /^\/agents\/?$/,
   /^\/providers\/?$/,
   /^\/models\/?$/,
+  /^\/contribute\/?$/,
 ];
 function updateRatingScaleVisibility(path) {
   const el = $('#ratingScale');
@@ -1163,6 +1165,53 @@ async function renderContributorProfile(handle, gen) {
     </div>
   `;
   mountContribRatingChart(p);
+}
+
+/* ─────────────────────────── 10 · CONTRIBUTE ─────────────────────────── */
+// Long-form contributor docs (formerly CONTRIBUTING.md). The page body is
+// pre-rendered at build time from site_template/contribute/contribute.html
+// and shipped in DATA.contribute_html — we just inject it here. The repo's
+// CONTRIBUTING.md is now a stub that points to /contribute/ so GitHub's
+// PR-template surface still works. The pre tags in the rendered fragment
+// use [data-copy]; the global click/keydown delegation below handles copy.
+
+function renderContribute() {
+  view().innerHTML = DATA.contribute_html || '';
+}
+
+// Click-to-copy delegation for any [data-copy] element on the page. Falls
+// back to a textarea-select hack on browsers without Clipboard API.
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-copy]');
+  if (!el) return;
+  _copyText(el);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest('[data-copy]');
+  if (!el) return;
+  e.preventDefault();
+  _copyText(el);
+});
+function _copyText(el) {
+  const text = el.textContent;
+  const done = () => {
+    el.classList.add('copied');
+    setTimeout(() => el.classList.remove('copied'), 1200);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, () => _fallbackCopy(text, done));
+  } else {
+    _fallbackCopy(text, done);
+  }
+}
+function _fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) { /* noop */ }
+  document.body.removeChild(ta);
 }
 
 /* ─────────────────────────── 06 · SILICON BEASTS ─────────────────────────── */

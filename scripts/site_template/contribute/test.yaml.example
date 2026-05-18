@@ -1,0 +1,26 @@
+contributor_url: https://github.com/your-username   # your unique ID — keep it consistent
+
+name: live-message-wall         # matches the test's directory name
+title: A live message wall      # short, human-readable title
+description: |                  # one or two sentences describing what the test simulates
+  A real-time, anonymous message wall web app with a TUI-inspired aesthetic.
+  Later stages add lazy loading, rate limiting, fading by age, and replies.
+
+domain: full-stack-web          # one of: full-stack-web, backend, frontend, cli,
+                                # mobile, game, data, library, other
+
+stages:                         # ordered list — each stage built on top of the previous
+  - id: stage-1-first-run       # kebab-case; matches the stage directory name in runs
+    theme: bootstrap            # one of: bootstrap, features, refinements,
+                                # refactor, extension, performance, security, other
+    prompt: |                   # the prompt verbatim, as it will be fed to the LLM
+      Build a web application called "Wall" where visitors can leave a message
+      that gets instantly published on the wall for others to see.
+      ...
+
+  - id: stage-2-advanced-features
+    builds_on: stage-1-first-run    # optional, for stages 2+; the id of the prior stage
+    theme: features
+    prompt: |
+      Add a couple thousand random messages for testing.
+      Make the wall lazy loading ...
