@@ -854,8 +854,10 @@ td .pill { vertical-align: middle; }
 }
 .catalog-logo.fallback {
   display: flex; align-items: center; justify-content: center;
-  font-size: 56px; color: var(--cyan);
+  font-size: 48px; font-weight: 700;
+  color: var(--cyan);
   text-shadow: var(--glow-cyan);
+  padding: 0;
 }
 .catalog-hero-main { min-width: 0; }
 .catalog-hero-desc {

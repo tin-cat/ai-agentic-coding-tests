@@ -56,6 +56,16 @@ function bar(score) {
   return `<div class="bar-row"><div class="bar"><div style="width:${pct}%"></div></div><span class="v">${fmtScore(score)}</span></div>`;
 }
 
+// Replace an <img> that failed to load with a same-size span showing the
+// entry's initial. The initial is passed via `data-initial` so the inline
+// onerror attribute doesn't need to embed user-supplied characters.
+window.logoFallback = function (img) {
+  const span = document.createElement('span');
+  span.className = (img.className || 'catalog-logo') + ' fallback';
+  span.textContent = img.dataset.initial || '?';
+  img.replaceWith(span);
+};
+
 /* ─────────────────────────── chart lifecycle ─────────────────────────── */
 const _charts = new Map();
 function makeChart(id, cfg) {
@@ -534,9 +544,13 @@ function catalogTabHTML(kind, item, isActive) {
 }
 
 function catalogDetailHTML(kind, d) {
+  // Fallback for entries without a logo (or where the image 404s at runtime):
+  // show the first letter of the name in a large font. The onerror handler
+  // reads the initial off a data attribute so any character is HTML-safe.
+  const initial = (d.name || d.id || '?').trim().charAt(0).toUpperCase();
   const logoHTML = d.logo
-    ? `<img class="catalog-logo" src=".${esc(d.logo)}" alt="${esc(d.name)} logo" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'catalog-logo fallback',textContent:'▌'}))" />`
-    : `<span class="catalog-logo fallback">▌</span>`;
+    ? `<img class="catalog-logo" src=".${esc(d.logo)}" alt="${esc(d.name)} logo" data-initial="${esc(initial)}" onerror="logoFallback(this)" />`
+    : `<span class="catalog-logo fallback">${esc(initial)}</span>`;
 
   const crossRows = d.cross.map((c) => `
     <tr class="clickable" onclick="location.hash='#/${kind.routeOther}/${encodeURIComponent(c[kind.crossKey])}'">
