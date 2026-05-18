@@ -65,7 +65,7 @@ agent:
   plan: pro                   # optional; the agent's plan or tier
 
 provider: anthropic           # one of: anthropic, openai, gemini, openrouter, azure, vertex, bedrock, github-models, groq, together, fireworks, cerebras, deepinfra, replicate, sambanova, nvidia-nim, huggingface, mistral, deepseek, xai, cohere, perplexity, self-hosted, other
-model: sonnet-4.6             # the model identifier
+model: sonnet-4.6             # the official model identifier — see the note below
 settings:                     # any agent or model settings that affect behavior
   effort: high
 
@@ -94,6 +94,14 @@ stages:
 ```
 
 Only include stages you actually ran. Do not add empty placeholder entries for stages you intend to run later.
+
+### Model identifier
+
+Please use the **official** identifier so runs of the same model can be grouped on the leaderboard:
+
+- **Closed / hosted models:** use the canonical name from the provider's docs (e.g. `sonnet-4.6`, `gpt-5-mini`, `gemini-2.5-pro`).
+- **Open-weight models:** use the Hugging Face repo path in `org/repo` form (e.g. `meta-llama/Llama-3.3-70B-Instruct`, `Qwen/Qwen2.5-Coder-32B-Instruct`). Browse [huggingface.co/models](https://huggingface.co/models) to find it.
+- For a cross-provider catalog of model IDs, [openrouter.ai/models](https://openrouter.ai/models) is a convenient reference.
 
 ### Rating scale
 

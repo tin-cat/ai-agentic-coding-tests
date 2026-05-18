@@ -1422,7 +1422,15 @@ class RunAddScreen(Screen):
                 allow_blank=False,
             )
             yield Label("Model identifier:", classes="field-label")
-            yield Input(placeholder="e.g. sonnet-4.6", id="model")
+            yield Input(
+                placeholder="e.g. sonnet-4.6, gpt-5-mini, meta-llama/Llama-3.3-70B-Instruct",
+                id="model",
+            )
+            yield Label(
+                "Please use the official identifier — from the provider's docs for closed models, "
+                "or from huggingface.co/models (as org/repo) for open-weight ones.",
+                classes="help-text",
+            )
             yield Label("Settings (one 'key=value' per line, optional):", classes="field-label")
             yield TextArea("", id="settings-area")
             with Container(id="self-hosted-section", classes="hidden"):
