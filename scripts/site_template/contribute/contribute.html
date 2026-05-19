@@ -11,31 +11,28 @@
 #}
 <div class="contribute-page">
 
-  {# ─── HERO ─── #}
-  <section class="contrib-hero">
-    <h1 class="contrib-hero-title">step into the <span class="t-magenta-glow">arena</span>.</h1>
-    <p class="contrib-hero-lead">Two ways to add to the arena: run an existing test against your favorite coding agent and record the results, or design a brand-new test for others to run. Either way, your contribution lands on the leaderboard.</p>
-    <div class="contrib-hero-ctas">
-      <a class="cta cta-primary" href="#path-run-detail">+ run a test</a>
-      <a class="cta cta-primary" href="#path-test-detail">+ create a new test</a>
-      <a class="cta" href="{{ github_url }}/fork" rel="noopener">⤴ fork on github</a>
-    </div>
-  </section>
+  {# ─── HERO + HONOR CODE — side-by-side on wide viewports, stacked when narrow ─── #}
+  <div class="contrib-intro-row">
+    {# ─── HERO ─── #}
+    <section class="contrib-hero">
+      <h1 class="contrib-hero-title">step into the <span class="t-magenta-glow">arena</span>.</h1>
+      <p class="contrib-hero-lead">Two ways to join the arena: run an existing test in your AI coding rig/setup, or design a brand-new test for others to run. Either way, your contribution lands on the leaderboard.</p>
+    </section>
 
-  {# ─── HONOR CODE ─── #}
-  <section class="oath-panel">
-    <div class="oath-marker"><span class="t-sword">⚔</span> THE CONTRIBUTOR'S CODE <span class="t-sword">⚔</span></div>
-    <div class="oath-body">
-      <p>There is no referee in this arena. <b>The leaderboard rests entirely on your honor.</b></p>
-      <p>Run the stages exactly as written. Report the time, the costs, and the rating you actually got. Be honest. Your data helps the community.</p>
-      <p>If you fake your way to the top, you might fool the board for a week. But the silicon knows. Your PR will be discarded in shame and preserved in the git log for history to know.</p>
-      <p class="oath-trust">We trust you.</p>
-    </div>
-    <div class="oath-footer">for honor · for science · for the leaderboard</div>
-  </section>
+    {# ─── HONOR CODE ─── #}
+    <section class="oath-panel">
+      <div class="oath-marker"><span class="t-sword">⚔</span> THE CONTRIBUTOR'S CODE <span class="t-sword">⚔</span></div>
+      <div class="oath-body">
+        <p><b>The leaderboard rests entirely on your honor.</b></p>
+        <p>Run the stages exactly as written. Report the time, the costs, and the rating you actually got. Be honest. Your data helps the community. We trust you.</p>
+        <p>If you fake your way to the top, you might fool the board for a week. But the silicon knows. Your PR will be discarded in shame and preserved in the git log for history to know.</p>
+      </div>
+      <div class="oath-footer">for honor · for science</div>
+    </section>
+  </div>
 
   {# ─── QUICK START · CLI ─── #}
-  <section class="panel">
+  <section class="panel" id="quick-start">
     <div class="panel-head"><span class="panel-title alt">Quick start</span></div>
     <div class="panel-body">
 
@@ -178,7 +175,7 @@ git push origin main</pre>
       <div class="kv-grid kv-wide">
         <div>
           <span class="k">closed / hosted</span>
-          <span class="v">Use the canonical name from the provider's docs — <code>sonnet-4.6</code>, <code>gpt-5-mini</code>, <code>gemini-2.5-pro</code>.</span>
+          <span class="v">Use the canonical name from the provider's docs, e.g. <code>sonnet-4.6</code>, <code>gpt-5-mini</code>, <code>gemini-2.5-pro</code>.</span>
         </div>
         <div>
           <span class="k">open weight</span>
@@ -234,7 +231,7 @@ git push origin main</pre>
   </section>
 
   {# ─── MANUAL RUN CONTRIBUTE ─── #}
-  <section class="panel" id="path-run-detail">
+  <section class="panel" id="manual-run-contribute">
     <div class="panel-head"><span class="panel-title">Without the CLI · contribute a run manually</span></div>
     <div class="panel-body">
 

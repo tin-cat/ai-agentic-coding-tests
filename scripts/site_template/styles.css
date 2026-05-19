@@ -1175,6 +1175,16 @@ body.nav-open .nav-backdrop { display: block; }
   margin: 0 .2em;
 }
 
+/* HERO + HONOR-CODE intro row — two-up when the viewport has room for both
+   at a comfortable width, otherwise stacks. The 440px floor keeps the hero
+   from squashing the title / lead too narrow before falling back to one col. */
+.contrib-intro-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+
 /* HERO */
 .contrib-hero {
   position: relative;
@@ -1267,13 +1277,6 @@ body.nav-open .nav-backdrop { display: block; }
 .oath-body p:last-child { margin: 0; }
 .oath-body b { color: var(--text); }
 .oath-body i { color: var(--text); font-style: italic; }
-.oath-trust {
-  text-align: center;
-  margin-top: 14px !important;
-  font-size: 14px !important;
-  color: var(--text) !important;
-  letter-spacing: 1px;
-}
 .oath-footer {
   text-align: center; margin-top: 22px;
   color: var(--magenta); text-shadow: var(--glow-magenta);
@@ -1497,6 +1500,7 @@ body.nav-open .nav-backdrop { display: block; }
 .alert b { color: var(--magenta); }
 
 /* kv-grid wide variant for the model identifier section */
+.kv-grid.kv-wide { margin-top: 14px; }
 .kv-grid.kv-wide > div { grid-template-columns: 140px 1fr; }
 .kv-grid.kv-wide .v { font-size: 12.5px; line-height: 1.65; color: var(--text-dim); }
 
