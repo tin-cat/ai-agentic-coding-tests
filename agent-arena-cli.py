@@ -591,6 +591,13 @@ Screen {
     height: auto;
 }
 
+.intro-banner {
+    border: round cyan 50%;
+    padding: 0 1;
+    margin: 0 1 1 1;
+    height: auto;
+}
+
 .prompt-panel {
     border: round $primary 50%;
     padding: 0 1;
@@ -1430,6 +1437,14 @@ class RunAddScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="content"):
+            yield Static(
+                "Browse every available test and its stage prompts at "
+                "[bold cyan]https://agentarena.tin.cat/tests/[/]\n"
+                "Copy each stage's prompt verbatim into your coding agent to run the test, then come back here to record the results.\n"
+                "Always start your agent fresh for each stage, on the code left by the previous stage.\n"
+                "Find more about how to run tests here: [bold cyan]https://agentarena.tin.cat/contribute/[/]",
+                classes="intro-banner",
+            )
             yield Label("Test you ran:", classes="field-label")
             yield Select(
                 options=[(n, n) for n in list_test_names()],
@@ -1729,8 +1744,13 @@ class RunAddScreen(Screen):
 # --------------------------------------------------------------------------- #
 
 
+_SCRIPT_INVOCATION = "./agent-arena-cli.py"
+
+
 def _walk_commands(group: click.Group, prefix: str = ""):
-    """Yield (path, signature, help_text) for every leaf command, in registration order."""
+    """Yield (path, signature, help_text) for every leaf command, in registration order.
+    `signature` is the full invocation (script + subcommand chain + args) so the
+    help screen shows commands exactly as they should be typed."""
     for name, cmd in group.commands.items():
         path = f"{prefix} {name}".strip()
         if isinstance(cmd, click.Group):
@@ -1741,7 +1761,7 @@ def _walk_commands(group: click.Group, prefix: str = ""):
             if isinstance(p, click.Argument):
                 meta = p.metavar or p.name.upper()
                 arg_parts.append(f"<{meta}>" if p.required else f"[{meta}]")
-        signature = " ".join([path, *arg_parts]) if arg_parts else path
+        signature = " ".join([_SCRIPT_INVOCATION, path, *arg_parts])
         yield (path, signature, cmd.help or "")
 
 
