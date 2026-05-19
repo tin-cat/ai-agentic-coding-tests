@@ -6,6 +6,11 @@ on:
     paths:
       - 'tests/**'
       - 'scripts/build_site.py'
+      - 'scripts/site_template/**'
+      - 'logos/**'
+      - 'models.json'
+      - 'agents.json'
+      - 'providers.json'
       - '.github/workflows/build-site.yml'
   workflow_dispatch:
 
