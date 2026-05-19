@@ -1168,6 +1168,12 @@ body.nav-open .nav-backdrop { display: block; }
 .contribute-page .cta:hover { text-decoration: none; }
 .contribute-page .t-magenta-glow { color: var(--magenta); text-shadow: var(--glow-magenta); }
 .contribute-page .t-sm { font-size: 11.5px; }
+.contribute-page .t-sword {
+  font-size: 2.8em;
+  vertical-align: -0.32em;
+  line-height: 0;
+  margin: 0 .2em;
+}
 
 /* HERO */
 .contrib-hero {
@@ -1310,6 +1316,16 @@ body.nav-open .nav-backdrop { display: block; }
 .codeblock.copied::after { content: "✓ copied"; color: var(--cyan); text-shadow: var(--glow-cyan); opacity: 1; }
 .codeblock.copied { border-color: var(--cyan); }
 
+/* CODE BLOCKS — syntax-highlight token classes set by build_site.py
+   highlight_yaml. Comments are pushed back, keys are the structural accent,
+   list dashes and block scalars share the magenta highlight, numbers pop. */
+.codeblock .tk-c { color: var(--text-mute); font-style: italic; }
+.codeblock .tk-k { color: var(--cyan); }
+.codeblock .tk-l { color: var(--magenta); }
+.codeblock .tk-b { color: var(--magenta); }
+.codeblock .tk-s { color: var(--text-dim); }
+.codeblock .tk-n { color: var(--warn); }
+
 /* CLI grid — list-style mini table for cli commands */
 .cli-grid { margin: 14px 0; display: flex; flex-direction: column; gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
 .cli-row {
@@ -1401,6 +1417,7 @@ body.nav-open .nav-backdrop { display: block; }
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
+.gauntlet-alt .step-num { color: var(--cyan-2); text-shadow: none; }
 .step-body { padding-top: 4px; }
 .step-title {
   color: var(--text); font-weight: 700; font-size: 14px;
