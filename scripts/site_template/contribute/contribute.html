@@ -167,28 +167,6 @@ git push origin main</pre>
     </div>
   </section>
 
-  {# ─── MODEL IDENTIFIER ─── #}
-  <section class="panel">
-    <div class="panel-head"><span class="panel-title">the model identifier</span></div>
-    <div class="panel-body">
-      <div>The model id is what groups runs together on the leaderboard. If two people record runs of the same model with different ids, they end up as two separate rows — so we keep a curated list of canonical ids in <a href="{{ github_url }}/blob/main/models.json" rel="noopener"><code>/models.json</code></a>.</div>
-      <div class="kv-grid kv-wide">
-        <div>
-          <span class="k">cli wizard</span>
-          <span class="v">The <code>run add</code> wizard offers a dropdown of every model in <code>/models.json</code>. Pick yours from there whenever possible.</span>
-        </div>
-        <div>
-          <span class="k">not in the list?</span>
-          <span class="v">The wizard's <code>— other —</code> option lets you type any id — your run will still be recorded. But to make it aggregate with other runs of the same model, open a PR adding the model to <code>/models.json</code> (see the next panel).</span>
-        </div>
-        <div>
-          <span class="k">id naming rules</span>
-          <span class="v">All lowercase. Closed-hosted: kebab-case with the vendor as a prefix when it disambiguates — <code>claude-sonnet-4.6</code>, <code>gpt-5-mini</code>, <code>gemini-2.5-pro</code>. Open-weight: HF-style <code>org/repo</code> in lowercase — <code>meta-llama/llama-3.3-70b-instruct</code>, <code>qwen/qwen2.5-coder-32b-instruct</code>. Use dots for version numbers, not hyphens.</span>
-        </div>
-      </div>
-    </div>
-  </section>
-
   {# ─── AGENT / PROVIDER / MODEL NOT LISTED ─── #}
   <section class="panel">
     <div class="panel-head"><span class="panel-title">if your agent, provider, or model isn't listed</span></div>
@@ -290,7 +268,7 @@ git push origin main</pre>
   <section class="panel">
     <div class="panel-head"><span class="panel-title alt">example directory layout</span></div>
     <div class="panel-body">
-      <div>If your github username were <code>anthony</code> and you ran the first two stages of the <code>live-message-wall</code> test with Claude Code Pro on Sonnet 4.6 at "high effort":</div>
+      <div>If your ran the first two stages of the <code>live-message-wall</code> test:</div>
       <pre data-copy class="codeblock lang-tree" role="button" tabindex="0" aria-label="Copy code">{{ directory_tree }}</pre>
     </div>
   </section>

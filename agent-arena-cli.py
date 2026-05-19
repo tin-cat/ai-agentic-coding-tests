@@ -198,7 +198,7 @@ from dataclasses import dataclass, field
 from textual import on as _on_event
 from textual.app import App as _TextualApp, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Horizontal, VerticalScroll
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, DataTable, Footer, Header, Input, Label, Select, Static, TextArea
 from ruamel.yaml.scalarstring import LiteralScalarString
@@ -716,6 +716,24 @@ Input, TextArea, Select {
     display: none;
 }
 
+/* Two-column form layout for the RunAddScreen upper fields. Each column is
+   a Vertical with width: 1fr so the two cols share available width evenly.
+   The "Stages" section below remains full-width (it lives outside the row). */
+#form-columns {
+    height: auto;
+    margin: 0 1;
+}
+
+.form-col {
+    width: 1fr;
+    height: auto;
+    margin: 0 1 0 0;
+}
+
+.form-col:last-of-type {
+    margin-right: 0;
+}
+
 .preview-yaml {
     border: round cyan;
     padding: 0 1;
@@ -967,6 +985,10 @@ class AgentArenaApp(_TextualApp):
 
     CSS = AGENT_ARENA_CSS
     TITLE = "AgentArena"
+    # Hide Textual's built-in command palette (the top-left "o" icon and the
+    # ^p footer hint). Our screens have their own buttons / bindings; the
+    # palette is just extra surface area for a single-purpose form app.
+    ENABLE_COMMAND_PALETTE = False
     BINDINGS = [Binding("ctrl+c", "quit", "Quit", show=False)]
 
     def __init__(self, *, initial_stack: Optional[list[Screen]] = None) -> None:
@@ -1157,25 +1179,32 @@ class TestAddScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header()
         with VerticalScroll(id="content"):
-            yield Label("Your contributor URL (GitHub profile, personal site, Mastodon, etc.):", classes="field-label")
-            yield Input(placeholder="https://github.com/your-username", id="contributor-url")
-            yield Label(
-                "This identifies you on the site. Use the same URL for all your tests and runs so they group under one profile.",
-                classes="help-text",
-            )
-            yield Label("Name (test directory, kebab-case):", classes="field-label")
-            yield Input(placeholder="e.g. live-message-wall", id="name")
-            yield Label("Short human-readable title:", classes="field-label")
-            yield Input(placeholder="A live message wall", id="title")
-            yield Label("Description (one or two sentences):", classes="field-label")
-            yield TextArea("", id="description")
-            yield Label("Domain (optional, pick the closest match):", classes="field-label")
-            yield Select(
-                options=[(DOMAIN_LABELS[d], d) for d in DOMAINS],
-                allow_blank=True,
-                id="domain",
-                prompt="(skip)",
-            )
+            with Horizontal(id="form-columns"):
+                # ── column 1: identity + name + title ──
+                with Vertical(classes="form-col"):
+                    yield Label("Your contributor URL (GitHub profile, personal site, Mastodon, etc.):", classes="field-label")
+                    yield Input(placeholder="https://github.com/your-username", id="contributor-url")
+                    yield Label(
+                        "This identifies you on the site. Use the same URL for all your tests and runs so they group under one profile.",
+                        classes="help-text",
+                    )
+                    yield Label("Name (test directory, kebab-case):", classes="field-label")
+                    yield Input(placeholder="e.g. live-message-wall", id="name")
+                    yield Label("Short human-readable title:", classes="field-label")
+                    yield Input(placeholder="A live message wall", id="title")
+
+                # ── column 2: description + domain ──
+                with Vertical(classes="form-col"):
+                    yield Label("Description (one or two sentences):", classes="field-label")
+                    yield TextArea("", id="description")
+                    yield Label("Domain (optional, pick the closest match):", classes="field-label")
+                    yield Select(
+                        options=[(DOMAIN_LABELS[d], d) for d in DOMAINS],
+                        allow_blank=True,
+                        id="domain",
+                        prompt="(skip)",
+                    )
+
             yield Label("Stages", classes="section-title")
             yield Label("Add stages in order; later stages may build on earlier ones.", classes="help-text")
             yield DataTable(id="stages-table", show_cursor=False, zebra_stripes=True)
@@ -1499,74 +1528,81 @@ class RunAddScreen(Screen):
                 "Find more about how to run tests here: [bold cyan]https://agentarena.tin.cat/contribute/[/]",
                 classes="intro-banner",
             )
-            yield Label("Test you ran:", classes="field-label")
-            yield Select(
-                options=[(n, n) for n in list_test_names()],
-                id="test-name",
-                allow_blank=False,
-            )
-            yield Label("Your personal URL (GitHub, website, Mastodon...):", classes="field-label")
-            yield Input(placeholder="https://github.com/yourname", id="contributor-url")
-            yield Label("Date of the run (YYYY-MM-DD):", classes="field-label")
-            yield Input(value=date.today().isoformat(), id="date")
-            yield Label("Coding agent / client:", classes="field-label")
-            yield Select(
-                options=[(a, a) for a in AGENT_NAMES],
-                value="claude-code",
-                id="agent-name",
-                allow_blank=False,
-            )
-            yield Label("Agent plan / tier (optional, e.g. pro):", classes="field-label")
-            yield Input(placeholder="empty if N/A", id="agent-plan")
-            yield Label("Inference provider:", classes="field-label")
-            yield Select(
-                options=[(p, p) for p in PROVIDERS],
-                value="anthropic",
-                id="provider",
-                allow_blank=False,
-            )
-            yield Label("Model:", classes="field-label")
-            yield Select(
-                options=[(_MODEL_OTHER_LABEL, _MODEL_OTHER_VALUE)]
-                        + [(f"{m['name']} · {m['id']}", m["id"]) for m in MODELS_CATALOG],
-                id="model-select",
-                allow_blank=True,
-                prompt="Select a model…",
-            )
-            with Container(id="model-other-section", classes="hidden"):
-                yield Label("Model identifier (free-form):", classes="field-label")
-                yield Input(
-                    placeholder="e.g. some-new-model, my-org/my-finetune-v2",
-                    id="model-other",
-                )
-            yield Static(
-                "Pick your model from the list. If it isn't there, choose 'Other (type your own)'"
-                "and enter the id below. To have a new model added to the list, contribute "
-                "a new entry in models.json. More info: [bold cyan]https://agentarena.tin.cat/contribute/[/].",
-                classes="help-text",
-            )
-            yield Label("Settings (one 'key=value' per line, optional):", classes="field-label")
-            yield TextArea("", id="settings-area")
-            yield Static(
-                "If you used any extra MCP servers, skills, custom subagents, or hooks beyond the "
-                "agent's defaults, list them here (e.g. 'mcps=linear,sentry', 'skills=simplify,review'). "
-                "Runs with undisclosed tooling aren't comparable to vanilla runs.",
-                classes="help-text",
-            )
-            with Container(id="self-hosted-section", classes="hidden"):
-                yield Label("Self-hosted details", classes="section-title")
-                yield Label("Inference framework:", classes="field-label")
-                yield Input(placeholder="e.g. lm-studio, ollama, llama.cpp, vllm, mlx", id="framework")
-                yield Label("Quantization (optional):", classes="field-label")
-                yield Input(placeholder="e.g. q4_K_M, q8_0, fp16", id="quantization")
-                yield Label("Machine label / device (optional):", classes="field-label")
-                yield Input(placeholder="e.g. nvidia-spark, m3-max, rtx-4090-pc", id="hw-device")
-                yield Label("GPU model (optional):", classes="field-label")
-                yield Input(placeholder="e.g. rtx-4090, h100", id="hw-gpu")
-                yield Label("VRAM in GB (integer, optional):", classes="field-label")
-                yield Input(id="hw-vram")
-                yield Label("System RAM in GB (integer, optional):", classes="field-label")
-                yield Input(id="hw-ram")
+            with Horizontal(id="form-columns"):
+                # ── column 1: identity + agent ──
+                with Vertical(classes="form-col"):
+                    yield Label("Test you ran:", classes="field-label")
+                    yield Select(
+                        options=[(n, n) for n in list_test_names()],
+                        id="test-name",
+                        allow_blank=False,
+                    )
+                    yield Label("Your personal URL (GitHub, website, Mastodon...):", classes="field-label")
+                    yield Input(placeholder="https://github.com/yourname", id="contributor-url")
+                    yield Label("Date of the run (YYYY-MM-DD):", classes="field-label")
+                    yield Input(value=date.today().isoformat(), id="date")
+                    yield Label("Coding agent / client:", classes="field-label")
+                    yield Select(
+                        options=[(a, a) for a in AGENT_NAMES],
+                        value="claude-code",
+                        id="agent-name",
+                        allow_blank=False,
+                    )
+                    yield Label("Agent plan / tier (optional, e.g. pro):", classes="field-label")
+                    yield Input(placeholder="empty if N/A", id="agent-plan")
+
+                # ── column 2: provider + model + settings + self-hosted ──
+                with Vertical(classes="form-col"):
+                    yield Label("Inference provider:", classes="field-label")
+                    yield Select(
+                        options=[(p, p) for p in PROVIDERS],
+                        value="anthropic",
+                        id="provider",
+                        allow_blank=False,
+                    )
+                    yield Label("Model:", classes="field-label")
+                    yield Select(
+                        options=[(_MODEL_OTHER_LABEL, _MODEL_OTHER_VALUE)]
+                                + [(f"{m['name']} · {m['id']}", m["id"]) for m in MODELS_CATALOG],
+                        id="model-select",
+                        allow_blank=True,
+                        prompt="Select a model…",
+                    )
+                    with Container(id="model-other-section", classes="hidden"):
+                        yield Label("Model identifier (free-form):", classes="field-label")
+                        yield Input(
+                            placeholder="e.g. some-new-model, my-org/my-finetune-v2",
+                            id="model-other",
+                        )
+                    yield Static(
+                        "Pick your model from the list. If it isn't there, choose 'Other (type your own)' "
+                        "and enter the id below. To have a new model added to the list, contribute "
+                        "a new entry in models.json. More info: [bold cyan]https://agentarena.tin.cat/contribute/[/].",
+                        classes="help-text",
+                    )
+                    yield Label("Settings (one 'key=value' per line, optional):", classes="field-label")
+                    yield TextArea("", id="settings-area")
+                    yield Static(
+                        "If you used any extra MCP servers, skills, custom subagents, or hooks beyond the "
+                        "agent's defaults, list them here (e.g. 'mcps=linear,sentry', 'skills=simplify,review'). "
+                        "Runs with undisclosed tooling aren't comparable to vanilla runs.",
+                        classes="help-text",
+                    )
+                    with Container(id="self-hosted-section", classes="hidden"):
+                        yield Label("Self-hosted details", classes="section-title")
+                        yield Label("Inference framework:", classes="field-label")
+                        yield Input(placeholder="e.g. lm-studio, ollama, llama.cpp, vllm, mlx", id="framework")
+                        yield Label("Quantization (optional):", classes="field-label")
+                        yield Input(placeholder="e.g. q4_K_M, q8_0, fp16", id="quantization")
+                        yield Label("Machine label / device (optional):", classes="field-label")
+                        yield Input(placeholder="e.g. nvidia-spark, m3-max, rtx-4090-pc", id="hw-device")
+                        yield Label("GPU model (optional):", classes="field-label")
+                        yield Input(placeholder="e.g. rtx-4090, h100", id="hw-gpu")
+                        yield Label("VRAM in GB (integer, optional):", classes="field-label")
+                        yield Input(id="hw-vram")
+                        yield Label("System RAM in GB (integer, optional):", classes="field-label")
+                        yield Input(id="hw-ram")
+
             yield Label("Stages", classes="section-title")
             yield Label("Select a row, then 'Record' to fill in its metrics.", classes="help-text")
             yield Static(
