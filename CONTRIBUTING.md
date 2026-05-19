@@ -18,3 +18,7 @@ The contributor guide, including `run.yaml` and `test.yaml` examples, is availab
 > ⚔ Run the stages exactly as written. Report the time, the costs, and the rating you actually got. *Be honest — especially when your favorite stack stumbles.* The leaderboard rests entirely on your honor.
 
 See the full guide linked above for the detailed flow, the schemas, and worked examples.
+
+## License
+
+This project is released under the [MIT License](LICENSE). By opening a PR you agree to license your contribution under the same terms.
