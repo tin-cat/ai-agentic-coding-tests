@@ -1507,11 +1507,11 @@ function mountScatter() {
       },
       scales: {
         x: { ...COMMON_SCALES,
-             title: { display: true, text: 'avg cost / stage (USD)', color: '#5d6878', font: { size: 10 } },
+             title: { display: true, text: 'avg cost / stage', color: '#5d6878', font: { size: 10 } },
              ticks: { ...COMMON_SCALES.ticks, callback: (v) => '$' + (v < 1 ? v.toFixed(4) : v.toFixed(2)) } },
         y: { ...COMMON_SCALES, min: 0, max: 1,
              ticks: { ...COMMON_SCALES.ticks, callback: (v) => (v * 10).toFixed(0) },
-             title: { display: true, text: 'avg rating score (0–10)', color: '#5d6878', font: { size: 10 } } },
+             title: { display: true, text: 'avg rating score', color: '#5d6878', font: { size: 10 } } },
       },
     },
   });
