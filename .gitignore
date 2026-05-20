@@ -22,5 +22,23 @@ tests/log-analyzer
 tests/note-taking-app
 tests/json-schema-validator
 
+# Dependency + build artifacts inside contributed run source. Contributors
+# should commit the source the agent produced, not installed/generated trees
+# (these bloat the repo and aren't needed — package.json/composer.json etc.
+# already pin them). Matches at any depth under /tests.
+tests/**/node_modules/
+tests/**/vendor/
+tests/**/target/
+tests/**/__pycache__/
+tests/**/.venv/
+tests/**/venv/
+tests/**/dist/
+tests/**/build/
+tests/**/.next/
+tests/**/.nuxt/
+tests/**/.svelte-kit/
+tests/**/.gradle/
+tests/**/Pods/
+
 # Annoying files
 .DS_Store
