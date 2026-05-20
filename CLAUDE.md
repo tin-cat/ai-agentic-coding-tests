@@ -7,8 +7,9 @@ Live at https://agentarena.tin.cat.
 
 ## Layout
 
-- `agent-arena-cli.py` — contributor CLI (TUI). Commands: `browse`, `validate`,
-  `test add`, `run add`. Self-bootstraps a venv into `/.venv/` on first run.
+- `agent-arena-cli.py` — contributor CLI (TUI). Commands: `test add`, `run add`
+  (interactive wizards), `validate`. Self-bootstraps a venv into `/.venv/` on
+  first run.
 - `scripts/build_site.py` — static-site generator. Reads all tests, aggregates,
   renders the SPA. Self-bootstraps `scripts/.venv/`.
 - `scripts/site_template/` — the SPA source: `index.html` (shell), `app.js`

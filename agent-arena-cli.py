@@ -13,7 +13,6 @@
 
 Just run it — dependencies install themselves on first run:
 
-    ./agent-arena-cli.py browse            # TUI for tests, runs, and their details
     ./agent-arena-cli.py test add          # interactively create a new test
     ./agent-arena-cli.py run add           # interactively record a run for a test
     ./agent-arena-cli.py validate          # validate every test.yaml / run.yaml
@@ -613,10 +612,9 @@ def truncate(text: str, width: int) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# Textual UI — `browse` opens TestsScreen; `test add` / `run add` open form
-# screens. Esc walks up the stack (Run / TestDetails → TestScreen → Tests →
-# quit). Q quits from anywhere. Stage editing happens in modal screens; a
-# preview modal shows the YAML before writing to disk.
+# Textual UI — `test add` / `run add` open form screens. Esc walks up the
+# stack (modals → form → quit); Q quits from anywhere. Stage editing happens
+# in modal screens; a preview modal shows the YAML before writing to disk.
 # --------------------------------------------------------------------------- #
 
 
@@ -756,233 +754,8 @@ TestStageEditScreen, RunStageEditScreen, _TestPreviewScreen, _RunPreviewScreen {
 """
 
 
-class TestsScreen(Screen):
-    """List all tests; Enter to drill into one."""
-
-    BINDINGS = [
-        Binding("escape,q", "app.quit", "Quit"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Label("Tests", classes="section-title")
-        yield DataTable(id="tests-table", zebra_stripes=True)
-        yield Footer()
-
-    def on_mount(self) -> None:
-        self.app.sub_title = "Tests"
-        table = self.query_one("#tests-table", DataTable)
-        table.add_columns("Name", "Stages", "Runs", "Description")
-        names = list_test_names()
-        for name in names:
-            try:
-                t = load_test(name)
-                runs = len(list_run_ids(name))
-                table.add_row(
-                    name,
-                    str(len(t.stages)),
-                    str(runs),
-                    truncate(t.description, 80),
-                    key=name,
-                )
-            except (ValidationError, FileNotFoundError):
-                table.add_row(name, "?", "?", "[invalid]", key=name)
-        table.cursor_type = "row"
-        table.focus()
-        if not names:
-            self.notify("No tests found under /tests.", severity="warning")
-
-    @_on_event(DataTable.RowSelected)
-    def _open_test(self, event: DataTable.RowSelected) -> None:
-        name = str(event.row_key.value)
-        self.app.push_screen(TestScreen(name))
-
-
-class TestScreen(Screen):
-    """A test's info + its runs in a DataTable; drill into runs or details."""
-
-    BINDINGS = [
-        Binding("escape", "app.pop_screen", "Back"),
-        Binding("q", "app.quit", "Quit"),
-        Binding("d", "show_details", "Test details"),
-    ]
-
-    def __init__(self, test_name: str) -> None:
-        super().__init__()
-        self.test_name = test_name
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield Static("", id="test-info")
-        yield Label("Runs", classes="section-title")
-        yield DataTable(id="runs-table", zebra_stripes=True)
-        yield Footer()
-
-    def on_mount(self) -> None:
-        self.app.sub_title = self.test_name
-        try:
-            t = load_test(self.test_name)
-        except (FileNotFoundError, ValidationError) as e:
-            self.query_one("#test-info", Static).update(f"[red]Error: {e}[/red]")
-            return
-
-        runs = list_run_ids(self.test_name)
-        info_lines = [
-            f"[bold]{t.title}[/bold]",
-            t.description.strip(),
-        ]
-        meta = [f"[dim]Stages:[/dim] {len(t.stages)}", f"[dim]Runs:[/dim] {len(runs)}"]
-        if t.domain:
-            meta.insert(0, f"[dim]Domain:[/dim] {t.domain}")
-        info_lines.append("    ".join(meta))
-        self.query_one("#test-info", Static).update("\n".join(info_lines))
-
-        table = self.query_one("#runs-table", DataTable)
-        table.add_columns("Run ID", "Date", "Model", "Agent", "Stages")
-        for run_id in runs:
-            try:
-                r = load_run(self.test_name, run_id)
-                agent_str = r.agent.name + (f" ({r.agent.plan})" if r.agent.plan else "")
-                ratings = "  ".join(s.rating[0].upper() for s in r.stages)
-                table.add_row(run_id, r.date.isoformat(), r.model, agent_str, ratings, key=run_id)
-            except (ValidationError, FileNotFoundError):
-                table.add_row(run_id, "?", "?", "?", "[invalid]", key=run_id)
-        table.cursor_type = "row"
-        table.focus()
-
-    @_on_event(DataTable.RowSelected)
-    def _open_run(self, event: DataTable.RowSelected) -> None:
-        run_id = str(event.row_key.value)
-        self.app.push_screen(RunScreen(self.test_name, run_id))
-
-    def action_show_details(self) -> None:
-        self.app.push_screen(TestDetailsScreen(self.test_name))
-
-
-class TestDetailsScreen(Screen):
-    """Full test info — header + every stage's prompt."""
-
-    BINDINGS = [
-        Binding("escape", "app.pop_screen", "Back"),
-        Binding("q", "app.quit", "Quit"),
-    ]
-
-    def __init__(self, test_name: str) -> None:
-        super().__init__()
-        self.test_name = test_name
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield VerticalScroll(id="content")
-        yield Footer()
-
-    def on_mount(self) -> None:
-        self.app.sub_title = f"{self.test_name} · details"
-        content = self.query_one("#content", VerticalScroll)
-        try:
-            t = load_test(self.test_name)
-        except (FileNotFoundError, ValidationError) as e:
-            content.mount(Static(f"[red]Error: {e}[/red]", classes="error"))
-            return
-
-        runs = len(list_run_ids(self.test_name))
-        info_lines = [
-            f"[bold]{t.title}[/bold]",
-            t.description.strip(),
-        ]
-        meta = [f"[dim]Stages:[/dim] {len(t.stages)}", f"[dim]Runs:[/dim] {runs}"]
-        if t.domain:
-            meta.insert(0, f"[dim]Domain:[/dim] {t.domain}")
-        info_lines.append("    ".join(meta))
-        content.mount(Static("\n".join(info_lines), id="test-info"))
-
-        for i, stage in enumerate(t.stages, 1):
-            content.mount(Label(f"Stage {i} — {stage.id}", classes="section-title"))
-            stage_meta = f"[dim]Theme:[/dim] {stage.theme}"
-            if stage.builds_on:
-                stage_meta += f"    [dim]Builds on:[/dim] {stage.builds_on}"
-            content.mount(Static(stage_meta, classes="stage-meta"))
-            content.mount(Static(stage.prompt.strip(), classes="prompt-panel"))
-
-
-class RunScreen(Screen):
-    """Full run info — metadata + per-stage metrics table."""
-
-    BINDINGS = [
-        Binding("escape", "app.pop_screen", "Back"),
-        Binding("q", "app.quit", "Quit"),
-    ]
-
-    def __init__(self, test_name: str, run_id: str) -> None:
-        super().__init__()
-        self.test_name = test_name
-        self.run_id = run_id
-
-    def compose(self) -> ComposeResult:
-        yield Header()
-        yield VerticalScroll(id="content")
-        yield Footer()
-
-    def on_mount(self) -> None:
-        self.app.sub_title = f"{self.test_name} / {self.run_id}"
-        content = self.query_one("#content", VerticalScroll)
-        try:
-            r = load_run(self.test_name, self.run_id)
-        except (FileNotFoundError, ValidationError) as e:
-            content.mount(Static(f"[red]Error: {e}[/red]", classes="error"))
-            return
-
-        meta_lines = [
-            f"[dim]Contributor:[/dim] {r.contributor_url}",
-            f"[dim]Date:[/dim] {r.date.isoformat()}",
-        ]
-        agent_str = r.agent.name + (f" ({r.agent.plan})" if r.agent.plan else "")
-        meta_lines.append(f"[dim]Agent:[/dim] {agent_str}")
-        meta_lines.append(f"[dim]Provider:[/dim] {r.provider}")
-        if r.framework:
-            meta_lines.append(f"[dim]Framework:[/dim] {r.framework}")
-        meta_lines.append(f"[dim]Model:[/dim] {r.model}")
-        if r.quantization:
-            meta_lines.append(f"[dim]Quantization:[/dim] {r.quantization}")
-        if r.settings:
-            meta_lines.append("[dim]Settings:[/dim] " + ", ".join(f"{k}={v}" for k, v in r.settings.items()))
-        if r.hardware:
-            hw_items = r.hardware.model_dump(exclude_none=True)
-            meta_lines.append("[dim]Hardware:[/dim] " + ", ".join(f"{k}={v}" for k, v in hw_items.items()))
-        content.mount(Static("\n".join(meta_lines), id="run-info"))
-
-        content.mount(Label("Stages", classes="section-title"))
-        stages_table = DataTable(zebra_stripes=False, show_cursor=False, id="stages-table")
-        stages_table.add_columns("Stage", "Time", "In", "Out", "Cost", "Rating", "Notes")
-        total_dur = total_in = total_out = 0
-        total_cost = 0.0
-        for s in r.stages:
-            mins, secs = divmod(s.duration_sec, 60)
-            duration = f"{mins}:{secs:02d}"
-            tokens_in = f"{s.tokens_in:,}" if s.tokens_in is not None else "—"
-            tokens_out = f"{s.tokens_out:,}" if s.tokens_out is not None else "—"
-            cost = f"${s.cost_usd:.2f}" if s.cost_usd is not None else "—"
-            notes = truncate(s.notes or "", 60)
-            stages_table.add_row(s.id, duration, tokens_in, tokens_out, cost, s.rating, notes)
-            total_dur += s.duration_sec
-            total_in += s.tokens_in or 0
-            total_out += s.tokens_out or 0
-            total_cost += s.cost_usd or 0.0
-        mins, secs = divmod(total_dur, 60)
-        stages_table.add_row(
-            "total",
-            f"{mins}:{secs:02d}",
-            f"{total_in:,}" if total_in else "—",
-            f"{total_out:,}" if total_out else "—",
-            f"${total_cost:.2f}" if total_cost else "—",
-            "",
-            "",
-        )
-        content.mount(stages_table)
-
-
 class AgentArenaApp(_TextualApp):
-    """Textual app for browsing AgentArena tests and runs."""
+    """Textual app hosting the interactive test/run creation wizards."""
 
     CSS = AGENT_ARENA_CSS
     TITLE = "AgentArena"
@@ -992,9 +765,9 @@ class AgentArenaApp(_TextualApp):
     ENABLE_COMMAND_PALETTE = False
     BINDINGS = [Binding("ctrl+c", "quit", "Quit", show=False)]
 
-    def __init__(self, *, initial_stack: Optional[list[Screen]] = None) -> None:
+    def __init__(self, *, initial_stack: list[Screen]) -> None:
         super().__init__()
-        self._initial_stack: list[Screen] = initial_stack or [TestsScreen()]
+        self._initial_stack: list[Screen] = initial_stack
 
     def on_mount(self) -> None:
         for screen in self._initial_stack:
@@ -1926,18 +1699,6 @@ test_app = typer.Typer(help="Test definitions.", no_args_is_help=True)
 run_app = typer.Typer(help="Test runs (contributed results).", no_args_is_help=True)
 app.add_typer(test_app, name="test")
 app.add_typer(run_app, name="run")
-
-
-# --------------------------------------------------------------------------- #
-# browse  →  the TUI is now the only display command. It covers everything the
-# old `test list / show` and `run list / show` did, with full keyboard nav.
-# --------------------------------------------------------------------------- #
-
-
-@app.command("browse")
-def browse_cmd() -> None:
-    """Browse tests, runs, and their details."""
-    AgentArenaApp().run()
 
 
 # --------------------------------------------------------------------------- #

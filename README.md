@@ -16,7 +16,7 @@ The leaderboard is fun, but the goal is real: a community-run, real-world view o
 Each test has its directory under `/tests`. Inside each test, you'll find:
 
 - `test.yaml` — Test definition: name, description, and each stage's prompt.
-- `/runs/` — One subdirectory per contributed run. Each run directory contains a `run.yaml` manifest and one subdirectory per stage with the resulting source code.
+- `/runs/` — One subdirectory per contributed run. Each run directory contains a `run.yaml` manifest and an optional subdirectory per stage with the resulting source code.
 
 ## Example test structure
 
@@ -35,33 +35,32 @@ Here is an example of the directory structure for the `live-message-wall` test:
                 /stage-4-complex-refinements
 ```
 
-Each run directory is flat: its `run.yaml` carries all the metadata (contributor, agent, provider, model, settings, hardware) and per-stage metrics (time, tokens, cost, rating). Each `stage-*/` subdirectory holds the complete source code that resulted from running that stage (even if most of it is duplicated from earlier stages).
+Each run directory is flat: its `run.yaml` carries all the metadata (contributor, agent, provider, model, settings, hardware) and per-stage metrics (time, tokens, cost, rating).
 
-## Browse with the CLI
+Optionally, each `stage-*/` subdirectory holds the complete source code that resulted from running that stage (even if most of it is duplicated from earlier stages).
 
-The repository ships with a single-file CLI, `agent-arena-cli.py`, for exploring tests and runs from the command line. It also handles the boilerplate for adding new tests or runs interactively, and can validate any manual YAML edits.
+## The CLI
+
+The repository ships with a single-file CLI, `agent-arena-cli.py`, that handles the boilerplate for adding new tests or runs interactively, and can validate any manual YAML edits.
 
 ```sh
 # Requirements: Python 3.11+
 
-# Browse
-./agent-arena-cli.py browse                    # full TUI for tests, runs, and their details
-
 # Add (interactive)
-./agent-arena-cli.py run add                   # record a new run
-./agent-arena-cli.py test add                  # create a new test
+./agent-arena-cli.py run add # record a new run
+./agent-arena-cli.py test add # create a new test
 
 # Validate
-./agent-arena-cli.py validate                  # check all yaml files against the schema
+./agent-arena-cli.py validate # check all yaml files against the schema
 ```
 
 Run `./agent-arena-cli.py --help` for the full command list.
 
 ### On Windows
 
-- **Command Prompt:** `agent-arena-cli.py browse`
-- **PowerShell:** `.\agent-arena-cli.py browse`
-- **Git Bash / WSL:** `./agent-arena-cli.py browse`
+- **Command Prompt:** `agent-arena-cli.py run add`
+- **PowerShell:** `.\agent-arena-cli.py run add`
+- **Git Bash / WSL:** `./agent-arena-cli.py run add`
 
 You can always invoke Python directly with `py agent-arena-cli.py …` or `python agent-arena-cli.py …`.
 
