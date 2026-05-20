@@ -39,12 +39,7 @@
       <span></span><span></span><span></span>
     </button>
     <a class="titlebar-left brand-link" href="/" aria-label="Home — overview">
-      <pre class="brand-logo" aria-hidden="true"> <span>▄</span>        <span>▄</span>
-  <span>▀▄</span>    <span>▄▀</span>
-    <span>▀▄</span><span class="c2">▄</span><span>▀</span>
-    <span>▄</span><span class="c2">▀</span><span>▀▄</span>
- <span class="eyes">█</span><span class="c2">▄▀</span>    <span class="c2">▀▄</span><span class="m2">█</span>
-<span class="eyes">▄</span><span class="m2">▀▀▀</span>    <span class="eyes">▀▀</span><span class="m2">▀</span><span class="eyes">▄</span></pre>
+      <img class="brand-logo" src="/logo.svg" alt="" aria-hidden="true" width="44" height="44">
       <div class="brand">
         <span class="brand-name">agent<span class="brand-name-accent">arena</span></span>
         <span class="brand-sub">{{ tagline }}</span>
@@ -63,19 +58,18 @@
 
   <!-- ════════════════════════════════════════════════════════════════════════ -->
   <nav class="sidebar" aria-label="Sections">
-    <div class="sidebar-label">─ sections ─</div>
     <ul class="nav-list" id="navList">
       <li><a class="nav-item" data-route="overview"     href="/"><span class="nav-key">01</span><span class="nav-label">overview</span></a></li>
       <li><a class="nav-item" data-route="leaderboard"  href="/leaderboard/"><span class="nav-key">02</span><span class="nav-label">leaderboard</span></a></li>
       <li><a class="nav-item" data-route="tests"        href="/tests/"><span class="nav-key">03</span><span class="nav-label">tests</span><span class="nav-count">{{ summary.tests }}</span></a></li>
       <li><a class="nav-item" data-route="runs"         href="/runs/"><span class="nav-key">04</span><span class="nav-label">runs</span><span class="nav-count">{{ summary.runs }}</span></a></li>
-      <li><a class="nav-item nav-item-action" data-route="contribute" href="/contribute/"><span class="nav-key">⚔</span><span class="nav-label">contribute</span></a></li>
       <li><a class="nav-item" data-route="contributors" href="/contributors/"><span class="nav-key">05</span><span class="nav-label">contributors</span><span class="nav-count">{{ summary.contributors }}</span></a></li>
       <li><a class="nav-item" data-route="hardware"     href="/hardware/"><span class="nav-key">06</span><span class="nav-label">silicon beasts</span></a></li>
       <li><a class="nav-item" data-route="agents"       href="/agents/"><span class="nav-key">07</span><span class="nav-label">agents</span></a></li>
       <li><a class="nav-item" data-route="providers"    href="/providers/"><span class="nav-key">08</span><span class="nav-label">providers</span></a></li>
       <li><a class="nav-item" data-route="models"       href="/models/"><span class="nav-key">09</span><span class="nav-label">models</span></a></li>
       <li><a class="nav-item" data-route="stacks"        href="/stacks/"><span class="nav-key">10</span><span class="nav-label">tech stacks</span>{% if summary.stacks %}<span class="nav-count">{{ summary.stacks }}</span>{% endif %}</a></li>
+      <li><a class="nav-item nav-item-action" data-route="contribute" href="/contribute/"><span class="nav-key">⚔</span><span class="nav-label">contribute</span></a></li>
     </ul>
 
     <div class="sidebar-footer">

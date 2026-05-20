@@ -1633,6 +1633,11 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         shutil.rmtree(dst_logos, ignore_errors=True)
         shutil.copytree(src_logos, dst_logos)
 
+    # ── Brand logo for the title bar (referenced as /logo.svg by index.html). ──
+    brand_logo = REPO_ROOT / "logo.svg"
+    if brand_logo.is_file():
+        shutil.copyfile(brand_logo, out_dir / "logo.svg")
+
     # ── stats.json — full dump for raw data access (not fetched by the SPA) ──
     sizes["stats.json"] = _write_json(out_dir / "stats.json", {
         "generated_at": build_date,

@@ -87,18 +87,12 @@ a:hover { text-decoration: underline; }
 }
 .brand-link:hover { background: rgba(90,209,255,.06); text-decoration: none; }
 .brand-link:hover .brand-name-accent { text-shadow: 0 0 18px rgba(90,209,255,.6); }
-.brand-link:hover .brand-logo        { text-shadow: 0 0 18px rgba(90,209,255,.5); }
+.brand-link:hover .brand-logo        { filter: drop-shadow(0 0 10px rgba(90,209,255,.55)); }
 .brand-logo {
-  margin: 0; padding: 0;
-  font-size: 8.5px; line-height: 1em;
-  color: var(--cyan);
-  text-shadow: var(--glow-cyan);
-  white-space: pre;
-  letter-spacing: -1px;
+  width: 44px; height: 44px;
+  display: block;
+  transition: filter .15s;
 }
-.brand-logo .eyes { color: var(--magenta); text-shadow: var(--glow-magenta); }
-.brand-logo .c2   { color: var(--cyan-2); }
-.brand-logo .m2   { color: var(--magenta-2); }
 .brand { display: flex; flex-direction: column; }
 .brand-name {
   font-weight: 700; font-size: 25px;
@@ -141,13 +135,6 @@ a:hover { text-decoration: underline; }
   background: linear-gradient(180deg, #0c1119 0%, var(--bg) 100%);
   overflow-y: auto;
 }
-.sidebar-label {
-  padding: 14px 16px 6px;
-  font-size: 10px; letter-spacing: 1.5px;
-  color: var(--text-mute); text-transform: uppercase;
-}
-.sidebar-label:first-child { padding-top: 0; }
-
 .nav-list { list-style: none; margin: 0; padding: 0; }
 .nav-item {
   display: grid; grid-template-columns: auto 1fr auto;
