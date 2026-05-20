@@ -162,7 +162,7 @@ git push origin main</pre>
 
         <div>If you feel like it, you can add the code results as your agent generated them to your contribution.</div>
 
-        <div>Add the resulting code of each stage to <code>/tests/&lt;test name&gt;/results/&lt;run-id&gt;/</code>. One subdirectory per stage you ran, named <b>exactly</b> like the stage <code>id</code> (e.g. <code>stage-1-first-run</code>). Inside each, put the complete source code the LLM produced, even if most of it is duplicated from earlier stages.</div>
+        <div>Add the resulting code of each stage to <code>/tests/&lt;test name&gt;/runs/&lt;run-id&gt;/</code>. One subdirectory per stage you ran, named <b>exactly</b> like the stage <code>id</code> (e.g. <code>stage-1-first-run</code>). Inside each, put the complete source code the LLM produced, even if most of it is duplicated from earlier stages.</div>
 
     </div>
   </section>
@@ -183,25 +183,21 @@ git push origin main</pre>
         <div class="rating-card" style="--c: {{ rating_color.excellent }}">
           <div class="rating-card-dot"></div>
           <div class="rating-card-name">excellent</div>
-          <div class="rating-card-score">10.0</div>
           <div class="rating-card-blurb">Stage completed cleanly on the original prompt with no follow-up prompting needed.</div>
         </div>
         <div class="rating-card" style="--c: {{ rating_color.good }}">
           <div class="rating-card-dot"></div>
           <div class="rating-card-name">good</div>
-          <div class="rating-card-score">7.5</div>
           <div class="rating-card-blurb">Stage completed but required minor follow-up prompting to fix issues.</div>
         </div>
         <div class="rating-card" style="--c: {{ rating_color.partial }}">
           <div class="rating-card-dot"></div>
           <div class="rating-card-name">partial</div>
-          <div class="rating-card-score">4.0</div>
           <div class="rating-card-blurb">Stage left major requirements unmet, even after follow-up.</div>
         </div>
         <div class="rating-card" style="--c: {{ rating_color.failed }}">
           <div class="rating-card-dot"></div>
           <div class="rating-card-name">failed</div>
-          <div class="rating-card-score">0.0</div>
           <div class="rating-card-blurb">Stage could not be completed.</div>
         </div>
       </div>
@@ -229,7 +225,7 @@ git push origin main</pre>
           <div class="step-num">02</div>
           <div class="step-body">
             <div class="step-title">create a run directory</div>
-            <div class="step-text">Place it at <code>/tests/&lt;test name&gt;/results/&lt;run-id&gt;/</code>. The run id is a short, unique slug — typically <code>&lt;your-github-username&gt;-&lt;agent&gt;-&lt;model&gt;-&lt;settings&gt;</code>, e.g. <code>tin-cat-claude-code-sonnet-4.6-high-effort</code>. For multiple runs of the same config, append <code>-2</code> or a date.</div>
+            <div class="step-text">Place it at <code>/tests/&lt;test name&gt;/runs/&lt;run-id&gt;/</code>. The run id is a short, unique slug — typically <code>&lt;your-github-username&gt;-&lt;agent&gt;-&lt;model&gt;-&lt;settings&gt;</code>, e.g. <code>tin-cat-claude-code-sonnet-4.6-high-effort</code>. For multiple runs of the same config, append <code>-2</code> or a date.</div>
           </div>
         </li>
 
@@ -296,6 +292,15 @@ git push origin main</pre>
             <div class="note">
               <span class="note-tag">tip</span>
               Start with a gentle <code>stage-1-first-run</code>, then crank up the complexity to strain the model.
+            </div>
+
+            <div class="note">
+              <span class="note-tag">tech stack</span>
+              The <code>stack</code> field is optional. Set it to pin your test to a specific tech stack
+              (the ids live in <a href="{{ github_url }}/blob/main/stacks.json" rel="noopener">stacks.json</a> — open a PR to add a missing one).
+              When a test declares a stack, its stage prompts <b>must require that stack</b> (e.g. a
+              <code>php-symfony</code> test should literally ask for Symfony) — otherwise the run isn't a fair test of it.
+              Stacks power the per-stack leaderboard of which models rank best on each.
             </div>
           </div>
         </li>

@@ -187,13 +187,13 @@ class RunStage(BaseModel):
     notes: Optional[str] = None
 
 
-def _load_model_aliases() -> dict[str, str]:
-    """Build an alias → canonical-id map from /models.json. Each catalog entry
-    may carry an "aliases" array listing legacy or short-form ids that should
-    aggregate together with the canonical id (e.g. "sonnet-4.6" → "claude-sonnet-4.6").
-    Missing or invalid models.json yields an empty map; aggregation then falls
-    back to raw string equality."""
-    path = REPO_ROOT / "models.json"
+def _load_aliases(filename: str) -> dict[str, str]:
+    """Build an alias → canonical-id map from a repo-root catalog (models.json,
+    stacks.json). Each catalog entry may carry an "aliases" array listing legacy
+    or short-form ids that should aggregate together with the canonical id
+    (e.g. "sonnet-4.6" → "claude-sonnet-4.6"). A missing or invalid file yields
+    an empty map; aggregation then falls back to raw string equality."""
+    path = REPO_ROOT / filename
     if not path.is_file():
         return {}
     try:
@@ -212,7 +212,8 @@ def _load_model_aliases() -> dict[str, str]:
     return out
 
 
-MODEL_ALIASES: dict[str, str] = _load_model_aliases()
+MODEL_ALIASES: dict[str, str] = _load_aliases("models.json")
+STACK_ALIASES: dict[str, str] = _load_aliases("stacks.json")
 
 
 class Run(BaseModel):
@@ -262,6 +263,7 @@ class Test(BaseModel):
     title: str
     description: str
     domain: Optional[DomainT] = None
+    stack: Optional[str] = None
     stages: list[TestStage]
 
     @field_validator("contributor_url")
@@ -271,6 +273,17 @@ class Test(BaseModel):
         if not v.startswith(("http://", "https://")):
             raise ValueError("must be a URL starting with http:// or https://")
         return v
+
+    @field_validator("stack")
+    @classmethod
+    def _normalize_stack(cls, v: Optional[str]) -> Optional[str]:
+        """Rewrite legacy/short-form stack ids to the canonical id from
+        /stacks.json so aggregation merges identical-stack tests together.
+        Unknown ids pass through untouched (rendered as 'unlisted')."""
+        if v is None:
+            return None
+        v = v.strip()
+        return STACK_ALIASES.get(v, v) if v else None
 
 
 # --------------------------------------------------------------------------- #
@@ -313,9 +326,9 @@ def load_all() -> dict[str, LoadedTest]:
             continue
         loaded = LoadedTest(test=t)
 
-        results_dir = test_dir / "results"
-        if results_dir.is_dir():
-            for run_dir in sorted(results_dir.iterdir()):
+        runs_dir = test_dir / "runs"
+        if runs_dir.is_dir():
+            for run_dir in sorted(runs_dir.iterdir()):
                 run_yaml = run_dir / "run.yaml"
                 if not run_yaml.is_file():
                     continue
@@ -381,6 +394,38 @@ def avatar_from_url(url: str) -> Optional[str]:
 def safe_avg(values: list[float]) -> Optional[float]:
     values = [v for v in values if v is not None]
     return sum(values) / len(values) if values else None
+
+
+def _stack_keywords(stack_id: str, catalog: dict[str, dict]) -> list[str]:
+    """Keywords whose presence in a stage prompt signals the stack is actually
+    required by the wording. Prefer an explicit "keywords" list in stacks.json;
+    otherwise derive significant tokens from the display name."""
+    meta = catalog.get(stack_id, {})
+    kws = meta.get("keywords")
+    if kws:
+        return [k.lower() for k in kws if k]
+    name = meta.get("name") or stack_id
+    stop = {"vanilla", "the", "a", "with", "plus", "and", "stdlib"}
+    return [t for t in re.split(r"[^a-z0-9.]+", name.lower()) if t and t not in stop]
+
+
+def lint_stack_prompts(loaded: dict[str, LoadedTest], catalog: dict[str, dict]) -> None:
+    """Soft check: a test that declares a stack should require that stack in its
+    prompts. Warn (never fail) when none of the stack's keywords appear in any
+    stage prompt — the contributor likely forgot to pin the stack in the wording."""
+    for lt in loaded.values():
+        stack = lt.test.stack
+        if not stack:
+            continue
+        kws = _stack_keywords(stack, catalog)
+        if not kws:
+            continue
+        haystack = "\n".join(s.prompt for s in lt.test.stages).lower()
+        if not any(k in haystack for k in kws):
+            label = catalog.get(stack, {}).get("name") or stack
+            _warn(f"test '{lt.test.name}' declares stack '{label}' but no stage prompt "
+                  f"mentions it (expected one of: {', '.join(kws)}). Tests with a stack "
+                  f"should require that stack in the prompt.")
 
 
 def rating_score(stages: list[RunStage]) -> Optional[float]:
@@ -549,17 +594,20 @@ def _run_summary(lr: LoadedRun, lt: LoadedTest) -> dict:
     }
 
 
-def build_per_test(loaded: dict[str, LoadedTest]) -> list[dict]:
+def build_per_test(loaded: dict[str, LoadedTest], stacks_catalog: dict[str, dict]) -> list[dict]:
     """One card per test, with its full stage definitions and ranked runs."""
     out = []
     for lt in sorted(loaded.values(), key=lambda x: x.test.name):
         run_summaries = [_run_summary(lr, lt) for lr in lt.runs]
         run_summaries.sort(key=lambda r: (r["avg_rating_score"] or 0), reverse=True)
+        stack = lt.test.stack
         out.append({
             "name": lt.test.name,
             "title": lt.test.title,
             "description": lt.test.description.strip(),
             "domain": lt.test.domain,
+            "stack": stack,
+            "stack_name": (stacks_catalog.get(stack, {}).get("name") or stack) if stack else None,
             "contributor_url":    lt.test.contributor_url,
             "contributor_handle": handle_from_url(lt.test.contributor_url),
             "contributor_avatar": avatar_from_url(lt.test.contributor_url),
@@ -584,23 +632,29 @@ def _build_grouped(
     cross_key: str,
     top_combo_fn=None,
 ) -> list[dict]:
-    """Shared aggregator used by build_per_agent, build_per_provider, build_per_model.
+    """Shared aggregator used by build_per_agent, build_per_provider,
+    build_per_model and build_per_stack.
 
-    `key_fn(run) -> str` picks the grouping id (e.g. agent name or provider).
-    `cross_fn(run) -> str` picks the cross-reference id for the table on the
-    detail page (the other axis). `catalog` adds display metadata when the id
-    is in /agents.json or /providers.json; ids missing from the catalog still
-    get a row (using the raw id as the display name).
-    `top_combo_fn(run) -> str` produces the "top combo" headline. Defaults to
-    "<cross> · <model>", which is right for agents/providers but redundant for
-    models (the model is the thing being described); models override it.
+    `key_fn(test, run) -> str|None` picks the grouping id (e.g. agent name,
+    provider, or the test's stack). Returning None drops the run from the
+    aggregation (used by stacks, where most tests declare no stack).
+    `cross_fn(test, run) -> str` picks the cross-reference id for the table on
+    the detail page (the other axis). `catalog` adds display metadata when the
+    id is in the matching catalog JSON; ids missing from the catalog still get a
+    row (using the raw id as the display name).
+    `top_combo_fn(test, run) -> str` produces the "top combo" headline. Defaults
+    to "<cross> · <model>", which is right for agents/providers but redundant
+    for models/stacks; those override it.
     """
     if top_combo_fn is None:
-        top_combo_fn = lambda r: f"{cross_fn(r)} · {r.model}"
+        top_combo_fn = lambda lt, lr: f"{cross_fn(lt, lr)} · {lr.run.model}"
     groups: dict[str, list[tuple[LoadedTest, LoadedRun]]] = defaultdict(list)
     for lt in loaded.values():
         for lr in lt.runs:
-            groups[key_fn(lr.run)].append((lt, lr))
+            gid = key_fn(lt, lr)
+            if gid is None:
+                continue
+            groups[gid].append((lt, lr))
 
     out: list[dict] = []
     for gid, items in groups.items():
@@ -611,7 +665,7 @@ def _build_grouped(
         # encountered among this group's runs.
         cross: dict[str, dict] = defaultdict(lambda: {"run_count": 0, "stages": []})
         for lt, lr in items:
-            cid = cross_fn(lr.run)
+            cid = cross_fn(lt, lr)
             cross[cid]["run_count"] += 1
             cross[cid]["stages"].extend(lr.run.stages)
         cross_rows = [
@@ -648,16 +702,15 @@ def _build_grouped(
         # most-used model among this group's runs.
         top_combo = None
         if items:
-            best_stages: list[RunStage] = []
+            best_item: Optional[tuple[LoadedTest, LoadedRun]] = None
             best_score = -1.0
             for lt, lr in items:
                 s = rating_score(lr.run.stages) or 0
                 if s > best_score:
                     best_score = s
-                    best_stages = [lr]
-            if best_stages:
-                lr = best_stages[0]
-                top_combo = top_combo_fn(lr.run)
+                    best_item = (lt, lr)
+            if best_item:
+                top_combo = top_combo_fn(*best_item)
 
         # Per-day run counts → "usage over time" chart on the detail page.
         by_date: dict[str, int] = defaultdict(int)
@@ -699,8 +752,8 @@ def build_per_agent(loaded: dict[str, LoadedTest], catalog: dict[str, dict]) -> 
     has runs against, and the full ranked run list."""
     return _build_grouped(
         loaded,
-        key_fn=lambda r: r.agent.name,
-        cross_fn=lambda r: r.provider,
+        key_fn=lambda lt, lr: lr.run.agent.name,
+        cross_fn=lambda lt, lr: lr.run.provider,
         catalog=catalog,
         self_key="agent",
         cross_key="provider",
@@ -712,8 +765,8 @@ def build_per_provider(loaded: dict[str, LoadedTest], catalog: dict[str, dict]) 
     build_per_agent — cross-reference is which agents have been used here."""
     return _build_grouped(
         loaded,
-        key_fn=lambda r: r.provider,
-        cross_fn=lambda r: r.agent.name,
+        key_fn=lambda lt, lr: lr.run.provider,
+        cross_fn=lambda lt, lr: lr.run.agent.name,
         catalog=catalog,
         self_key="provider",
         cross_key="agent",
@@ -754,21 +807,57 @@ def _infer_vendor(model_id: str) -> tuple[Optional[str], Optional[str]]:
     return None, None
 
 
-def build_per_model(loaded: dict[str, LoadedTest], catalog: dict[str, dict]) -> list[dict]:
+def _model_stack_rollup(loaded: dict[str, LoadedTest],
+                        stacks_catalog: dict[str, dict]) -> dict[str, list[dict]]:
+    """For each model (raw id), the tech stacks it has been run on and the
+    model's average rating score on each — i.e. how well this model does per
+    stack. Runs inherit their test's stack; tests without a stack are skipped."""
+    agg: dict[str, dict[str, dict]] = defaultdict(
+        lambda: defaultdict(lambda: {"stages": [], "runs": 0}))
+    for lt in loaded.values():
+        stack = lt.test.stack
+        if not stack:
+            continue
+        for lr in lt.runs:
+            cell = agg[lr.run.model][stack]
+            cell["stages"].extend(lr.run.stages)
+            cell["runs"] += 1
+
+    out: dict[str, list[dict]] = {}
+    for model, by_stack in agg.items():
+        rows = [
+            {
+                "stack":            stack,
+                "stack_name":       stacks_catalog.get(stack, {}).get("name") or stack,
+                "run_count":        cell["runs"],
+                "stage_count":      len(cell["stages"]),
+                "avg_rating_score": rating_score(cell["stages"]),
+            }
+            for stack, cell in by_stack.items()
+        ]
+        rows.sort(key=lambda r: (r["avg_rating_score"] or 0, r["run_count"]), reverse=True)
+        out[model] = rows
+    return out
+
+
+def build_per_model(loaded: dict[str, LoadedTest], catalog: dict[str, dict],
+                    stacks_catalog: dict[str, dict]) -> list[dict]:
     """One entry per model identifier used in any run. Catalog metadata
     (display name, description, homepage, vendor, logo) comes from
     /models.json when the id matches; otherwise we fall back to the raw id
-    and the id-prefix vendor inference."""
+    and the id-prefix vendor inference. Each entry also carries a per-stack
+    rollup of the model's average score on every stack it has been run on."""
+    stack_rollup = _model_stack_rollup(loaded, stacks_catalog)
     rows = _build_grouped(
         loaded,
-        key_fn=lambda r: r.model,
-        cross_fn=lambda r: r.provider,
+        key_fn=lambda lt, lr: lr.run.model,
+        cross_fn=lambda lt, lr: lr.run.provider,
         catalog=catalog,
         self_key="model",
         cross_key="provider",
         # For a model's "top combo" the cross-axis already implies the model;
         # show provider · agent instead so the headline is informative.
-        top_combo_fn=lambda r: f"{r.provider} · {r.agent.name}",
+        top_combo_fn=lambda lt, lr: f"{lr.run.provider} · {lr.run.agent.name}",
     )
     # The raw id (possibly an HF "org/repo" path) is what we want to display;
     # the URL-safe slug is what we want to route to and write as a filename.
@@ -778,6 +867,7 @@ def build_per_model(loaded: dict[str, LoadedTest], catalog: dict[str, dict]) -> 
         original = row["id"]
         row["id"] = _slug_model(original)
         row["model"] = original
+        row["stacks"] = stack_rollup.get(original, [])
         meta = catalog.get(original, {})
         vendor_name = meta.get("vendor")
         if not vendor_name:
@@ -786,6 +876,27 @@ def build_per_model(loaded: dict[str, LoadedTest], catalog: dict[str, dict]) -> 
             if inferred_logo and not row.get("logo"):
                 row["logo"] = inferred_logo
         row["vendor_name"] = vendor_name
+    return rows
+
+
+def build_per_stack(loaded: dict[str, LoadedTest], catalog: dict[str, dict]) -> list[dict]:
+    """One entry per tech stack declared by any test (tests without a stack are
+    skipped). Each run inherits its test's stack, so the cross-reference axis is
+    the model — i.e. which models rank best on this stack. Metadata (name,
+    language, description, homepage, logo) comes from /stacks.json."""
+    rows = _build_grouped(
+        loaded,
+        key_fn=lambda lt, lr: lt.test.stack,        # None → skipped by _build_grouped
+        cross_fn=lambda lt, lr: lr.run.model,       # rank models within the stack
+        catalog=catalog,
+        self_key="stack",
+        cross_key="model",
+        # The stack is the thing being described; a "<model> · <agent>" headline
+        # is the informative pairing here.
+        top_combo_fn=lambda lt, lr: f"{lr.run.model} · {lr.run.agent.name}",
+    )
+    for row in rows:
+        row["language"] = catalog.get(row["id"], {}).get("language")
     return rows
 
 
@@ -1147,6 +1258,7 @@ def build_summary(loaded: dict[str, LoadedTest]) -> dict:
         "stages": len(stages),
         "contributors": len(contributors),
         "models": len({(lr.run.provider, lr.run.model) for lr in runs}),
+        "stacks": len({lt.test.stack for lt in loaded.values() if lt.test.stack}),
     }
 
 
@@ -1234,6 +1346,8 @@ def _compact_test(t: dict) -> dict:
         "title":              t["title"],
         "description":        t["description"],
         "domain":             t["domain"],
+        "stack":              t["stack"],
+        "stack_name":         t["stack_name"],
         "contributor_handle": t["contributor_handle"],
         "contributor_url":    t["contributor_url"],
         "contributor_avatar": t["contributor_avatar"],
@@ -1375,15 +1489,20 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     agents_catalog    = load_catalog("agents.json")
     providers_catalog = load_catalog("providers.json")
     models_catalog    = load_catalog("models.json")
+    stacks_catalog    = load_catalog("stacks.json")
+
+    # Soft check: warn (don't fail) when a test pins a stack its prompts never mention.
+    lint_stack_prompts(loaded, stacks_catalog)
 
     summary      = build_summary(loaded)
     leaderboard  = build_leaderboard(loaded)
     scatter      = build_scatter(loaded)
     theme_stats  = build_theme_stats(loaded)
-    per_test     = build_per_test(loaded)
+    per_test     = build_per_test(loaded, stacks_catalog)
     per_agent    = build_per_agent(loaded, agents_catalog)
     per_provider = build_per_provider(loaded, providers_catalog)
-    per_model    = build_per_model(loaded, models_catalog)
+    per_model    = build_per_model(loaded, models_catalog, stacks_catalog)
+    per_stack    = build_per_stack(loaded, stacks_catalog)
     all_runs     = build_all_runs(loaded)
     contributors = build_contributors(loaded)
     activity     = build_activity(loaded)
@@ -1425,6 +1544,7 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         "agents":       [_compact_catalog_row(a) for a in per_agent],
         "providers":    [_compact_catalog_row(p) for p in per_provider],
         "models":       [_compact_catalog_row(m) for m in per_model],
+        "stacks":       [{**_compact_catalog_row(s), "language": s.get("language")} for s in per_stack],
         "contributors": {
             "profiles": [_compact_profile(p) for p in contributors["profiles"]],
             "recent":   contributors["recent"],
@@ -1445,6 +1565,8 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
             "title":              t["title"],
             "description":        t["description"],
             "domain":             t["domain"],
+            "stack":              t["stack"],
+            "stack_name":         t["stack_name"],
             "contributor_url":    t["contributor_url"],
             "contributor_handle": t["contributor_handle"],
             "contributor_avatar": t["contributor_avatar"],
@@ -1489,7 +1611,17 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
             "vendor_name": m.get("vendor_name"),
             "cross":       m["cross"],   # providers serving this model
             "tests":       m["tests"],
+            "stacks":      m["stacks"],  # per-stack avg score for this model
             "activity":    m["activity"],
+        })
+    for s in per_stack:
+        _write_json(out_dir / "stacks" / f"{s['id']}.json", {
+            **_compact_catalog_row(s),
+            "language": s.get("language"),
+            "homepage": s.get("homepage"),
+            "cross":    s["cross"],      # models ranked on this stack
+            "tests":    s["tests"],
+            "activity": s["activity"],
         })
 
     # ── logo assets — mirror the /logos/ tree into the site output so the SPA
@@ -1515,6 +1647,7 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         "agents":       per_agent,
         "providers":    per_provider,
         "models":       per_model,
+        "stacks":       per_stack,
         "contributors": contributors,
     })
 
@@ -1601,6 +1734,8 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
                                    page_description="Per-provider breakdown of contributed activity, with the agents observed against each.")
     write_route("models/",         page_title="Models — AgentArena",
                                    page_description="Per-model breakdown of contributed activity, with the providers serving each.")
+    write_route("stacks/",         page_title="Tech stacks — AgentArena",
+                                   page_description="Per-stack breakdown of contributed activity — which models rank best on each tech stack.")
     write_route("contribute/",     page_title="Contribute — AgentArena",
                                    page_description="Step into the arena. How to record a run, forge a new test, write run.yaml / test.yaml, and get on the leaderboard.")
 
@@ -1659,6 +1794,11 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
                     page_title=f"{m['name']} (model) — AgentArena",
                     page_description=_catalog_desc(m, "model"),
                     og_type="article", og_image=m.get("logo"))
+    for s in per_stack:
+        write_route(f"stacks/{s['id']}/",
+                    page_title=f"{s['name']} (tech stack) — AgentArena",
+                    page_description=_catalog_desc(s, "tech stack"),
+                    og_type="article", og_image=s.get("logo"))
 
     # SPA fallback for unknown paths. GitHub Pages serves this for 404s; the
     # SPA will then resolve location.pathname and either render the matching
@@ -1750,6 +1890,13 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         desc = (f"by {vendor}. " if vendor else "") + f"{m['run_count']} run(s) across {m['test_count']} test(s)."
         llms_parts.append(_line(m["name"], f"/models/{m['id']}/", desc))
 
+    if per_stack:
+        llms_parts += ["", "## Tech stacks", ""]
+        for s in per_stack:
+            desc = (s.get("description") or "") + (
+                f" {s['run_count']} run(s) across {s['test_count']} test(s).")
+            llms_parts.append(_line(s["name"], f"/stacks/{s['id']}/", desc.strip()))
+
     llms_parts += ["", "## Contributors", ""]
     for p in contributors["profiles"]:
         desc = (f"{p['run_count']} run(s) across {p['test_count']} test(s)"
@@ -1767,17 +1914,20 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     n_agents = len(per_agent)
     n_providers = len(per_provider)
     n_models = len(per_model)
-    # Per-route HTML files written: 9 section landings + per-entity pages
-    # (one per test, contributor, agent, provider, model) + per-run pages
+    n_stacks = len(per_stack)
+    # Per-route HTML files written: 10 section landings + per-entity pages
+    # (one per test, contributor, agent, provider, model, stack) + per-run pages
     # (each run is duplicated under runs/ and tests/.../runs/).
-    n_html = 9 + n_tests + 2 * n_runs + n_contribs + n_agents + n_providers + n_models + 1  # +1 for 404
+    n_html = (10 + n_tests + 2 * n_runs + n_contribs
+              + n_agents + n_providers + n_models + n_stacks + 1)  # +1 for 404
     print(f"✓ Wrote {n_html} HTML files (per-route shells + 404.html)")
     print(f"✓ Wrote sitemap.xml ({len(sitemap_urls)} canonical URLs) + robots.txt + llms.txt")
     print(f"✓ Wrote app.js, styles.css, boot.js (boot payload {sizes['boot.js']:,} bytes)")
     print(f"✓ Wrote {out_dir / 'index.json'} ({sizes['index.json']:,} bytes)")
     print(f"✓ Wrote {out_dir / 'runs.json'} ({sizes['runs.json']:,} bytes)")
     print(f"✓ Wrote {n_tests} tests/, {n_runs} runs/, {n_contribs} contributors/, "
-          f"{n_agents} agents/, {n_providers} providers/, {n_models} models/ shards")
+          f"{n_agents} agents/, {n_providers} providers/, {n_models} models/, "
+          f"{n_stacks} stacks/ shards")
     print(f"  {summary['tests']} tests · {summary['runs']} runs · "
           f"{summary['stages']} stages · {summary['contributors']} contributors")
     print(f"  Local preview: python3 -m http.server -d {out_dir} 8000  →  http://localhost:8000")

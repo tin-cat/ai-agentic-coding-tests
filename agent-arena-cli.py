@@ -436,6 +436,7 @@ class Test(BaseModel):
     title: str
     description: str
     domain: Optional[DomainT] = None
+    stack: Optional[str] = None         # optional tech stack id from /stacks.json (e.g. "php-symfony").
     stages: list[TestStage]
 
     @field_validator("contributor_url")
@@ -467,14 +468,14 @@ def load_test(name: str) -> Test:
 
 
 def list_run_ids(test_name: str) -> list[str]:
-    results_dir = TESTS_DIR / test_name / "results"
-    if not results_dir.is_dir():
+    runs_dir = TESTS_DIR / test_name / "runs"
+    if not runs_dir.is_dir():
         return []
-    return sorted(p.name for p in results_dir.iterdir() if (p / "run.yaml").is_file())
+    return sorted(p.name for p in runs_dir.iterdir() if (p / "run.yaml").is_file())
 
 
 def load_run(test_name: str, run_id: str) -> Run:
-    path = TESTS_DIR / test_name / "results" / run_id / "run.yaml"
+    path = TESTS_DIR / test_name / "runs" / run_id / "run.yaml"
     if not path.is_file():
         raise FileNotFoundError(f"Run '{run_id}' for test '{test_name}' not found")
     data = yaml.load(path.read_text(encoding="utf-8"))
@@ -1312,7 +1313,7 @@ class TestAddScreen(Screen):
         if not confirmed:
             return
         target_dir.mkdir(parents=True, exist_ok=True)
-        (target_dir / "results").mkdir(exist_ok=True)
+        (target_dir / "runs").mkdir(exist_ok=True)
         write_yaml(target_dir / "test.yaml", test_to_yaml(test))
         rel = (target_dir / "test.yaml").relative_to(REPO_ROOT)
         self.app.exit(result=str(rel))
@@ -1497,7 +1498,7 @@ class _RunPreviewScreen(ModalScreen[Optional[str]]):
         if not run_id or run_id != sanitize_slug(run_id):
             self.notify("Run ID must be lowercase kebab-case (letters, digits, dots, dashes).", severity="error")
             return
-        target = TESTS_DIR / self.test_name / "results" / run_id / "run.yaml"
+        target = TESTS_DIR / self.test_name / "runs" / run_id / "run.yaml"
         if target.exists():
             self.notify(f"{target.relative_to(REPO_ROOT)} already exists - pick a different ID.", severity="warning")
             return
@@ -1847,7 +1848,7 @@ class RunAddScreen(Screen):
     def _after_preview(self, run_id: Optional[str], run: "Run", test_name: str, recorded_stages: list[_RunStageDraft]) -> None:
         if run_id is None:
             return
-        target = TESTS_DIR / test_name / "results" / run_id / "run.yaml"
+        target = TESTS_DIR / test_name / "runs" / run_id / "run.yaml"
         target.parent.mkdir(parents=True, exist_ok=True)
         write_yaml(target, run_to_yaml(run))
         for s in recorded_stages:
@@ -2030,7 +2031,7 @@ def _cross_check_test(test_name: str) -> list[tuple[Path, str]]:
 
 
 def _cross_check_run(test_name: str, run_id: str, valid_stage_ids: set[str]) -> list[tuple[Path, str]]:
-    path = TESTS_DIR / test_name / "results" / run_id / "run.yaml"
+    path = TESTS_DIR / test_name / "runs" / run_id / "run.yaml"
     try:
         r = load_run(test_name, run_id)
     except (FileNotFoundError, ValidationError):
@@ -2074,7 +2075,7 @@ def validate_cmd(
                 valid_ids = set()
 
             for run_id in list_run_ids(test_name):
-                run_yaml = TESTS_DIR / test_name / "results" / run_id / "run.yaml"
+                run_yaml = TESTS_DIR / test_name / "runs" / run_id / "run.yaml"
                 errors += _validate_path(run_yaml)
                 errors += _cross_check_run(test_name, run_id, valid_ids)
 

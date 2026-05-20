@@ -194,17 +194,6 @@ a:hover { text-decoration: underline; }
   border-radius: 3px; background: var(--bg-2);
 }
 
-.sidebar-stats {
-  padding: 0 16px;
-  display: grid; gap: 4px;
-  font-size: 11px;
-}
-.sidebar-stats > div {
-  display: flex; justify-content: space-between;
-  padding: 3px 0;
-}
-.sidebar-stats .k { color: var(--text-mute); }
-.sidebar-stats .v { color: var(--cyan); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .sidebar-footer {
   margin-top: auto;
@@ -361,6 +350,8 @@ a:hover { text-decoration: underline; }
 }
 .pill.muted { background: rgba(255,255,255,.04); color: var(--text-dim); border-color: var(--border); }
 .pill.magenta { background: rgba(255,106,213,.12); color: var(--magenta); border-color: rgba(255,106,213,.25); }
+a.pill { text-decoration: none; transition: background .12s, border-color .12s; }
+a.pill:hover { background: rgba(255,106,213,.2); border-color: rgba(255,106,213,.45); }
 
 .dots { display: inline-flex; gap: 4px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
@@ -1014,6 +1005,10 @@ td .pill { vertical-align: middle; }
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.catalog-tab-badge.alt {
+  background: rgba(255,106,213,.12);
+  color: var(--magenta);
+}
 
 /* ════════════════════════════════════════════════════════════════════════
    Help modal
@@ -1140,7 +1135,6 @@ body.nav-open .nav-backdrop { display: block; }
   }
   body.nav-open .sidebar { transform: translateX(0); }
   .sidebar-footer { display: flex; }
-  .sidebar-stats  { display: grid; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════

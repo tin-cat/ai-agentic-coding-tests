@@ -133,6 +133,7 @@ const loadContributor = (handle)   => loadJSON(`/contributors/${encodeURICompone
 const loadAgent       = (id)       => loadJSON(`/agents/${encodeURIComponent(id)}.json`);
 const loadProvider    = (id)       => loadJSON(`/providers/${encodeURIComponent(id)}.json`);
 const loadModel       = (id)       => loadJSON(`/models/${encodeURIComponent(id)}.json`);
+const loadStack       = (id)       => loadJSON(`/stacks/${encodeURIComponent(id)}.json`);
 
 const SKELETON = `<div class="panel"><div class="panel-body t-mute">loading…</div></div>`;
 
@@ -171,6 +172,8 @@ const routes = [
   { pat: /^\/providers\/([^/]+)\/?$/,                        name: 'providers',    handler: (m, gen) => renderProviders(decodeURIComponent(m[1]), gen) },
   { pat: /^\/models\/?$/,                                    name: 'models',       handler: (_m, gen) => renderModels(null, gen) },
   { pat: /^\/models\/([^/]+)\/?$/,                           name: 'models',       handler: (m, gen) => renderModels(decodeURIComponent(m[1]), gen) },
+  { pat: /^\/stacks\/?$/,                                    name: 'stacks',       handler: (_m, gen) => renderStacks(null, gen) },
+  { pat: /^\/stacks\/([^/]+)\/?$/,                           name: 'stacks',       handler: (m, gen) => renderStacks(decodeURIComponent(m[1]), gen) },
   { pat: /^\/hardware\/?$/,                                  name: 'hardware',     handler: (_m, gen) => renderHardware(gen) },
   { pat: /^\/contribute\/?$/,                                name: 'contribute',   handler: (_m, gen) => renderContribute(gen) },
 ];
@@ -389,6 +392,7 @@ const RATING_SCALE_HIDDEN_PATHS = [
   /^\/agents\/?$/,
   /^\/providers\/?$/,
   /^\/models\/?$/,
+  /^\/stacks\/?$/,
   /^\/contribute\/?$/,
 ];
 function updateRatingScaleVisibility(path) {
@@ -507,6 +511,7 @@ function testTabHTML(t, isActive) {
     <div class="catalog-tab-badges">
       <span class="catalog-tab-badge">${t.run_count} run${t.run_count === 1 ? '' : 's'}</span>
       <span class="catalog-tab-badge">${t.stages_total} stage${t.stages_total === 1 ? '' : 's'}</span>
+      ${t.stack ? `<span class="catalog-tab-badge alt">${esc(t.stack_name || t.stack)}</span>` : ''}
       ${t.top_score != null ? `<span class="catalog-tab-badge">top ${fmtScore(t.top_score)}</span>` : ''}
     </div>
   </a>`;
@@ -522,6 +527,7 @@ function testDetailHTML(t) {
         <span class="panel-title">${esc(t.title)}</span>
         <span class="panel-actions">
           ${t.domain ? `<span class="pill">${esc(t.domain)}</span>` : ''}
+          ${t.stack ? `<a class="pill magenta" href="/stacks/${encodeURIComponent(t.stack)}/">${esc(t.stack_name || t.stack)}</a>` : ''}
           <span class="pill muted">${esc(t.name)}</span>
         </span>
       </div>
@@ -530,6 +536,7 @@ function testDetailHTML(t) {
         <div class="kv-grid">
           ${t.contributor_handle ? `<div><span class="k">authored by</span><span class="v"><a class="author-inline" href="/contributors/${encodeURIComponent(t.contributor_handle)}/">${t.contributor_avatar ? `<img class="avatar-thumb" src="${esc(t.contributor_avatar)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}<span>${esc(t.contributor_handle)}</span></a></span></div>` : ''}
           ${t.domain ? `<div><span class="k">domain</span><span class="v"><span class="pill">${esc(t.domain)}</span></span></div>` : ''}
+          ${t.stack ? `<div><span class="k">tech stack</span><span class="v"><a class="pill magenta" href="/stacks/${encodeURIComponent(t.stack)}/">${esc(t.stack_name || t.stack)}</a></span></div>` : ''}
           <div><span class="k">stages</span><span class="v">${t.stages_total}</span></div>
           <div><span class="k">contributed runs</span><span class="v">${t.run_count}</span></div>
           <div><span class="k">top score</span><span class="v t-cyan">${fmtScoreDetail(t.runs[0]?.avg_rating_score)}</span></div>
@@ -625,6 +632,25 @@ const CATALOG_KINDS = {
     // names are too unpredictable — so the "unlisted" hint doesn't apply.
     hasCatalog: false,
   },
+  stacks: {
+    list:       () => DATA.stacks || [],
+    load:       (id) => loadStack(id),
+    route:      'stacks',
+    routeOther: 'models',
+    tag:        '10',
+    title:      'tech stacks',
+    lead:       'Per-stack breakdown of activity — which models rank best on each tech stack, and the tests that target it.',
+    crumb:      'stacks',
+    eyebrow:    'tech stack',
+    countSing:  'stack',
+    countPlur:  'stacks',
+    crossLabel: 'models ranked',
+    crossKey:   'model',
+    hasCatalog: true,
+    // Stacks add a "models ranked" bar chart to the detail page (the cross axis
+    // is models, so the cross table doubles as a per-stack model ranking).
+    crossChart: 'models ranked on this stack',
+  },
 };
 
 function catalogTabHTML(kind, item, isActive) {
@@ -713,6 +739,34 @@ function catalogDetailHTML(kind, d) {
       </div>
     </div>
 
+    ${d.stacks && d.stacks.length ? `
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">tech stacks used</span><span class="panel-actions t-mute">${d.stacks.length} stack${d.stacks.length === 1 ? '' : 's'} · avg score on each</span></div>
+      <div class="panel-body dense">
+        <table>
+          <thead><tr><th>stack</th><th class="num">runs</th><th class="num">stages</th><th>avg score</th></tr></thead>
+          <tbody>${d.stacks.map((s) => `
+            <tr class="clickable" onclick="navigate('/stacks/${encodeURIComponent(s.stack)}/')">
+              <td><a href="/stacks/${encodeURIComponent(s.stack)}/">${esc(s.stack_name || s.stack)}</a></td>
+              <td class="num">${s.run_count}</td>
+              <td class="num">${s.stage_count}</td>
+              <td style="min-width:170px">${bar(s.avg_rating_score)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
+
+    ${kind.crossChart ? `
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">${esc(kind.crossChart)}</span><span class="panel-actions t-mute">${d.cross.length} ${esc(kind.crossKey)}${d.cross.length === 1 ? '' : 's'}</span></div>
+      <div class="panel-body">
+        ${d.cross.length
+          ? `<div class="chart-box tall"><canvas id="catalogCrossChart"></canvas></div>`
+          : '<div style="padding:14px;color:var(--text-mute)">no runs yet.</div>'}
+      </div>
+    </div>` : ''}
+
     <div class="panel">
       <div class="panel-head"><span class="panel-title">usage over time</span><span class="panel-actions t-mute">${d.activity.length} day${d.activity.length === 1 ? '' : 's'}</span></div>
       <div class="panel-body">
@@ -771,6 +825,7 @@ async function renderCatalog(kind, selectedId, gen) {
     const slot = $('#catalogDetailSlot');
     if (slot) slot.innerHTML = catalogDetailHTML(kind, detail);
     mountCatalogActivity(detail.activity);
+    if (kind.crossChart) mountCrossBarChart('catalogCrossChart', detail.cross, kind.crossKey);
   } catch (err) {
     if (isStale(gen)) return;
     const slot = $('#catalogDetailSlot');
@@ -781,6 +836,7 @@ async function renderCatalog(kind, selectedId, gen) {
 const renderAgents    = (id, gen) => renderCatalog(CATALOG_KINDS.agents, id, gen);
 const renderProviders = (id, gen) => renderCatalog(CATALOG_KINDS.providers, id, gen);
 const renderModels    = (id, gen) => renderCatalog(CATALOG_KINDS.models, id, gen);
+const renderStacks    = (id, gen) => renderCatalog(CATALOG_KINDS.stacks, id, gen);
 
 function runsTableHTML(runs, opts = {}) {
   const { showTest = true } = opts;
@@ -1508,6 +1564,43 @@ function mountLeaderBar(rows) {
       plugins: {
         legend: { display: false },
         tooltip: { ...COMMON_TOOLTIP, callbacks: { label: (ctx) => `score ${(ctx.raw * 10).toFixed(1)}` } },
+      },
+      scales: {
+        x: { ...COMMON_SCALES, min: 0, max: 1,
+             ticks: { ...COMMON_SCALES.ticks, callback: (v) => (v * 10).toFixed(0) } },
+        y: { ...COMMON_SCALES, ticks: { ...COMMON_SCALES.ticks, font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+// Horizontal bar of avg rating score (0–10) per cross-axis entry. Used by the
+// stacks detail page to chart which models rank best on a given tech stack.
+function mountCrossBarChart(canvasId, rows, labelKey) {
+  if (!rows || !rows.length) return;
+  const sorted = [...rows].sort((a, b) => (b.avg_rating_score || 0) - (a.avg_rating_score || 0)).slice(0, 12);
+  makeChart(canvasId, {
+    type: 'bar',
+    data: {
+      labels: sorted.map((r) => r[labelKey] || '—'),
+      datasets: [{
+        data: sorted.map((r) => r.avg_rating_score || 0),
+        backgroundColor: sorted.map((_, i) => i === 0 ? '#ff6ad5' : 'rgba(90,209,255,.55)'),
+        borderColor: sorted.map((_, i) => i === 0 ? '#ff6ad5' : '#5ad1ff'),
+        borderWidth: 1, borderRadius: 2,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...COMMON_TOOLTIP, callbacks: {
+          label: (ctx) => {
+            const r = sorted[ctx.dataIndex];
+            return [`score ${(ctx.raw * 10).toFixed(1)}`, `${r.run_count} run${r.run_count === 1 ? '' : 's'} · ${r.stage_count} stage${r.stage_count === 1 ? '' : 's'}`];
+          },
+        } },
       },
       scales: {
         x: { ...COMMON_SCALES, min: 0, max: 1,

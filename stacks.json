@@ -1,0 +1,177 @@
+[
+  {
+    "id": "vanilla-php",
+    "name": "Vanilla PHP",
+    "category": "PHP",
+    "language": "php",
+    "description": "Plain PHP with no application framework.",
+    "keywords": [
+      "php"
+    ],
+    "logo": "/logos/stacks/vanilla-php.svg"
+  },
+  {
+    "id": "php-symfony",
+    "name": "PHP + Symfony",
+    "category": "PHP",
+    "language": "php",
+    "description": "PHP on the Symfony full-stack framework.",
+    "homepage": "https://symfony.com",
+    "keywords": [
+      "symfony"
+    ],
+    "logo": "/logos/stacks/php-symfony.svg"
+  },
+  {
+    "id": "php-laravel",
+    "name": "PHP + Laravel",
+    "category": "PHP",
+    "language": "php",
+    "description": "PHP on the Laravel application framework.",
+    "homepage": "https://laravel.com",
+    "keywords": [
+      "laravel"
+    ],
+    "logo": "/logos/stacks/php-laravel.svg"
+  },
+  {
+    "id": "vanilla-js",
+    "name": "Vanilla JS",
+    "category": "JavaScript",
+    "language": "javascript",
+    "description": "Plain browser JavaScript with no UI framework or build step.",
+    "keywords": [
+      "vanilla",
+      "javascript",
+      "vanilla js"
+    ],
+    "logo": "/logos/stacks/vanilla-js.svg"
+  },
+  {
+    "id": "node-express",
+    "name": "Node + Express",
+    "category": "JavaScript",
+    "language": "javascript",
+    "description": "Node.js with the Express web framework.",
+    "homepage": "https://expressjs.com",
+    "keywords": [
+      "express",
+      "node"
+    ],
+    "logo": "/logos/stacks/node-express.svg"
+  },
+  {
+    "id": "react-vite",
+    "name": "React + Vite",
+    "category": "TypeScript",
+    "language": "typescript",
+    "description": "React single-page apps scaffolded with the Vite build tool.",
+    "homepage": "https://react.dev",
+    "keywords": [
+      "react",
+      "vite"
+    ],
+    "logo": "/logos/stacks/react-vite.svg"
+  },
+  {
+    "id": "nextjs",
+    "name": "Next.js",
+    "category": "TypeScript",
+    "language": "typescript",
+    "description": "Full-stack React framework with file-based routing and SSR.",
+    "homepage": "https://nextjs.org",
+    "keywords": [
+      "next.js",
+      "nextjs",
+      "next"
+    ],
+    "logo": "/logos/stacks/nextjs.svg"
+  },
+  {
+    "id": "sveltekit",
+    "name": "SvelteKit",
+    "category": "TypeScript",
+    "language": "typescript",
+    "description": "Svelte's full-stack application framework.",
+    "homepage": "https://svelte.dev",
+    "keywords": [
+      "svelte",
+      "sveltekit"
+    ],
+    "logo": "/logos/stacks/sveltekit.svg"
+  },
+  {
+    "id": "typescript-node",
+    "name": "TypeScript (Node)",
+    "category": "TypeScript",
+    "language": "typescript",
+    "description": "Plain TypeScript running on Node.js, no web framework.",
+    "homepage": "https://www.typescriptlang.org",
+    "keywords": [
+      "typescript"
+    ],
+    "logo": "/logos/stacks/typescript-node.svg"
+  },
+  {
+    "id": "python-fastapi",
+    "name": "Python + FastAPI",
+    "category": "Python",
+    "language": "python",
+    "description": "Python on the FastAPI async web framework.",
+    "homepage": "https://fastapi.tiangolo.com",
+    "keywords": [
+      "fastapi"
+    ],
+    "logo": "/logos/stacks/python-fastapi.svg"
+  },
+  {
+    "id": "python-django",
+    "name": "Python + Django",
+    "category": "Python",
+    "language": "python",
+    "description": "Python on the Django batteries-included web framework.",
+    "homepage": "https://www.djangoproject.com",
+    "keywords": [
+      "django"
+    ],
+    "logo": "/logos/stacks/python-django.svg"
+  },
+  {
+    "id": "python-flask",
+    "name": "Python + Flask",
+    "category": "Python",
+    "language": "python",
+    "description": "Python on the Flask micro web framework.",
+    "homepage": "https://flask.palletsprojects.com",
+    "keywords": [
+      "flask"
+    ],
+    "logo": "/logos/stacks/python-flask.svg"
+  },
+  {
+    "id": "go-stdlib",
+    "name": "Go (stdlib)",
+    "category": "Go",
+    "language": "go",
+    "description": "Go using only the standard library, no third-party web framework.",
+    "homepage": "https://go.dev",
+    "keywords": [
+      "go",
+      "golang"
+    ],
+    "logo": "/logos/stacks/go-stdlib.svg"
+  },
+  {
+    "id": "rust-axum",
+    "name": "Rust + Axum",
+    "category": "Rust",
+    "language": "rust",
+    "description": "Rust on the Axum async web framework.",
+    "homepage": "https://github.com/tokio-rs/axum",
+    "keywords": [
+      "axum",
+      "rust"
+    ],
+    "logo": "/logos/stacks/rust-axum.svg"
+  }
+]

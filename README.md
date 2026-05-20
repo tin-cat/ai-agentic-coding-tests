@@ -16,7 +16,7 @@ The leaderboard is fun, but the goal is real: a community-run, real-world view o
 Each test has its directory under `/tests`. Inside each test, you'll find:
 
 - `test.yaml` — Test definition: name, description, and each stage's prompt.
-- `/results/` — One subdirectory per contributed run. Each run directory contains a `run.yaml` manifest and one subdirectory per stage with the resulting source code.
+- `/runs/` — One subdirectory per contributed run. Each run directory contains a `run.yaml` manifest and one subdirectory per stage with the resulting source code.
 
 ## Example test structure
 
@@ -26,7 +26,7 @@ Here is an example of the directory structure for the `live-message-wall` test:
 /tests
     /live-message-wall
         test.yaml
-        /results
+        /runs
             /tin-cat-claude-code-sonnet-4.6-high-effort
                 run.yaml
                 /stage-1-first-run

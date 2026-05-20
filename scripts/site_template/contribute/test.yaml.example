@@ -9,6 +9,10 @@ description: |                  # one or two sentences describing what the test 
 domain: full-stack-web          # one of: full-stack-web, backend, frontend, cli,
                                 # mobile, game, data, library, other
 
+stack: node-express             # optional tech stack id from /stacks.json (e.g. vanilla-php,
+                                # php-symfony, react-vite, python-fastapi). Omit to leave it open.
+                                # If you set a stack, your stage prompts MUST require that stack.
+
 stages:                         # ordered list — each stage built on top of the previous
   - id: stage-1-first-run       # kebab-case; matches the stage directory name in runs
     theme: bootstrap            # one of: bootstrap, features, refinements,

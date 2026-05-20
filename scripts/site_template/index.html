@@ -75,15 +75,8 @@
       <li><a class="nav-item" data-route="agents"       href="/agents/"><span class="nav-key">07</span><span class="nav-label">agents</span></a></li>
       <li><a class="nav-item" data-route="providers"    href="/providers/"><span class="nav-key">08</span><span class="nav-label">providers</span></a></li>
       <li><a class="nav-item" data-route="models"       href="/models/"><span class="nav-key">09</span><span class="nav-label">models</span></a></li>
+      <li><a class="nav-item" data-route="stacks"        href="/stacks/"><span class="nav-key">10</span><span class="nav-label">tech stacks</span>{% if summary.stacks %}<span class="nav-count">{{ summary.stacks }}</span>{% endif %}</a></li>
     </ul>
-
-    <div class="sidebar-label">─ data ─</div>
-    <div class="sidebar-stats">
-      <div><span class="k">tests</span><span class="v">{{ summary.tests }}</span></div>
-      <div><span class="k">runs</span><span class="v">{{ summary.runs }}</span></div>
-      <div><span class="k">stages</span><span class="v">{{ summary.stages }}</span></div>
-      <div><span class="k">models</span><span class="v">{{ summary.models }}</span></div>
-    </div>
 
     <div class="sidebar-footer">
       <div class="cursor-blink">▌</div>
