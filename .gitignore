@@ -10,7 +10,6 @@ tests/csv-analyzer
 tests/markdown-to-html
 tests/pixel-canvas
 tests/rest-api-todo
-tests/snake-game
 tests/url-shortener
 tests/weather-dashboard
 tests/expense-tracker

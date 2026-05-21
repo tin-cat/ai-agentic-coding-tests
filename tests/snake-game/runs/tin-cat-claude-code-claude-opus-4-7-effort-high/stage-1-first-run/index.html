@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Snake</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+	<main class="game">
+		<header class="hud">
+			<h1>Snake</h1>
+			<div class="score">Score: <span id="score">0</span></div>
+		</header>
+
+		<div class="board-wrap">
+			<canvas id="board" width="400" height="400" aria-label="Snake game board"></canvas>
+
+			<div id="overlay" class="overlay hidden">
+				<h2 id="overlay-title">Game Over</h2>
+				<p class="final-score">Score: <span id="final-score">0</span></p>
+				<button id="restart" type="button">Restart</button>
+			</div>
+		</div>
+
+		<p class="hint">Use the arrow keys or WASD to move.</p>
+	</main>
+
+	<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+contributor_url: https://github.com/anthony   # the URL that identifies the author of this test on the site
+name: snake-game
+title: A browser Snake game
+description: |
+  The classic Snake arcade game implemented as a single-page web app.
+  Later stages add progression, sound, and a local leaderboard, then
+  mobile touch controls and a responsive layout.
+domain: game
+stack: vanilla-js
+
+stages:
+  - id: stage-1-first-run
+    theme: bootstrap
+    prompt: |
+      Build the classic Snake game as a single-page HTML/CSS/JavaScript app. Do not use any Javascript framework, just vanilla Javascript.
+
+      The snake moves on a 20x20 grid, controlled with the arrow keys or WASD. The snake grows by one segment when it eats an apple; a new apple appears at a random empty cell. The game ends when the snake hits a wall or itself.
+
+      Show the current score (apples eaten) and a "Game Over" screen with a "Restart" button.
+
+      Pressing the opposite direction of the current heading should be ignored (no instant self-collision).
+
+      Add a README.md.
+
+  - id: stage-2-features
+    builds_on: stage-1-first-run
+    theme: features
+    prompt: |
+      Add a level progression: every 5 apples eaten, the tick rate increases by ~15%, up to a sensible cap. Show the current level alongside the score.
+
+      Add simple sound effects: a soft "bite" sound when eating an apple, and a "game over" sound. A mute toggle in the UI persists across reloads (localStorage).
+
+      Add a local leaderboard stored in localStorage. After Game Over, if the score is in the top 5, prompt for a 3-letter initial and add it to the leaderboard. Show the top 5 scores on the main menu.
+
+  - id: stage-3-mobile
+    builds_on: stage-2-features
+    theme: extension
+    prompt: |
+      Make the game playable on mobile. Add swipe-based touch controls: swipes in the four cardinal directions change the snake's heading. Swipes should feel responsive.
+
+      Make the layout responsive: the playfield always fits the viewport while preserving its square aspect ratio, with sensible margins for the score/level/mute UI. On landscape phones the UI should still be reachable.
+
+      Prevent the page from scrolling or zooming on touch when interacting with the game area.
+
+  - id: stage-4-graphics-refactor
+    builds_on: stage-3-mobile
+    theme: refactor
+    prompt: |
+      Refactor de entire UI to use detailed images instead of characters or emojis, if they were being used. Migrate to a canvas-based rendering if it isn't already. Use sprite-like images to render all visual elements of the gameplay and the interface except for the text, for which you can use standard canvas text-rendering methods. Use a fun font face. Generate all needed images so they have a cartoony, colorful look. Make the snake and the fruit animate in some way, such as apples rotating over their axis, or the snake showing his tongue from time to time. Make the snake body correctly bend on corners (you might need to create appropiate sprite-like images for that).

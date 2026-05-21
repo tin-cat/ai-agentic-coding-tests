@@ -1,0 +1,35 @@
+contributor_url: https://github.com/tin-cat
+date: 2026-05-21
+agent:
+  name: claude-code
+  plan: pro
+provider: anthropic
+model: claude-opus-4.7
+settings:
+  effort: high
+stages:
+  - id: stage-1-first-run
+    duration_sec: 75
+    tokens_in: 2100
+    tokens_out: 6400
+    cost_usd: 0.3465
+    rating: excellent
+  - id: stage-2-features
+    duration_sec: 279
+    tokens_in: 2000
+    tokens_out: 25000
+    cost_usd: 1.32
+    rating: excellent
+    notes: Tested the game by installing Playwright and running it in a headless Chrome.
+  - id: stage-3-mobile
+    duration_sec: 132
+    tokens_in: 2200
+    tokens_out: 11300
+    cost_usd: 0.65
+    rating: excellent
+  - id: stage-4-graphics-refactor
+    duration_sec: 704
+    tokens_in: 2500
+    tokens_out: 56100
+    cost_usd: 2.8
+    rating: excellent

@@ -1,0 +1,138 @@
+:root {
+	--bg: #11161d;
+	--panel: #1b232e;
+	--grid-a: #19212b;
+	--grid-b: #1d2632;
+	--snake: #5ad17e;
+	--snake-head: #8bf0ad;
+	--apple: #e8584f;
+	--text: #d5dde8;
+	--muted: #8a98ab;
+	--accent: #5ad17e;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--bg);
+	color: var(--text);
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.game {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding: 1.5rem;
+}
+
+.hud {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 1.5rem;
+}
+
+.hud h1 {
+	margin: 0;
+	font-size: 1.5rem;
+	letter-spacing: 0.15em;
+	text-transform: uppercase;
+	color: var(--accent);
+}
+
+.score {
+	font-size: 1.1rem;
+	color: var(--muted);
+}
+
+.score span {
+	color: var(--text);
+	font-weight: bold;
+}
+
+.board-wrap {
+	position: relative;
+	background: var(--panel);
+	border-radius: 8px;
+	padding: 8px;
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+#board {
+	display: block;
+	border-radius: 4px;
+	width: 400px;
+	height: 400px;
+	max-width: 80vmin;
+	max-height: 80vmin;
+}
+
+.overlay {
+	position: absolute;
+	inset: 8px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.75rem;
+	background: rgba(17, 22, 29, 0.88);
+	border-radius: 4px;
+	text-align: center;
+}
+
+.overlay.hidden {
+	display: none;
+}
+
+.overlay h2 {
+	margin: 0;
+	font-size: 2rem;
+	color: var(--apple);
+	letter-spacing: 0.05em;
+}
+
+.final-score {
+	margin: 0;
+	color: var(--muted);
+}
+
+.final-score span {
+	color: var(--text);
+	font-weight: bold;
+}
+
+#restart {
+	margin-top: 0.5rem;
+	padding: 0.6rem 1.4rem;
+	font: inherit;
+	font-weight: bold;
+	color: var(--bg);
+	background: var(--accent);
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: transform 0.08s ease, filter 0.15s ease;
+}
+
+#restart:hover {
+	filter: brightness(1.1);
+}
+
+#restart:active {
+	transform: scale(0.96);
+}
+
+.hint {
+	margin: 0;
+	text-align: center;
+	color: var(--muted);
+	font-size: 0.85rem;
+}

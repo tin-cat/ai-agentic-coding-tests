@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Snake</title>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+	<main class="game">
+		<header class="hud">
+			<h1>Snake</h1>
+			<div class="stats">
+				<span class="stat">Score <span id="score">0</span></span>
+				<span class="stat">Level <span id="level">1</span></span>
+			</div>
+			<button id="mute" class="mute" type="button" aria-pressed="false" title="Mute sound">🔊</button>
+		</header>
+
+		<div class="board-wrap">
+			<canvas id="board" width="400" height="400" aria-label="Snake game board"></canvas>
+
+			<div id="overlay" class="overlay">
+				<!-- Main menu (shown on load and from Game Over). -->
+				<section id="screen-menu" class="screen">
+					<h2 class="menu-title">Snake</h2>
+					<div class="leaderboard">
+						<h3>High Scores</h3>
+						<ol id="menu-scores" class="scores"></ol>
+					</div>
+					<button id="play" type="button">Play</button>
+				</section>
+
+				<!-- Game over. -->
+				<section id="screen-over" class="screen hidden">
+					<h2 class="over-title">Game Over</h2>
+					<p class="final-score">
+						Score <span id="final-score">0</span> &middot; Level <span id="final-level">1</span>
+					</p>
+
+					<form id="initials-form" class="initials hidden">
+						<label for="initials-input">New high score! Enter your initials:</label>
+						<input id="initials-input" type="text" maxlength="3" autocomplete="off"
+							spellcheck="false" aria-label="Your initials">
+						<button type="submit">Save</button>
+					</form>
+
+					<div class="leaderboard">
+						<h3>High Scores</h3>
+						<ol id="over-scores" class="scores"></ol>
+					</div>
+
+					<button id="restart" type="button">Play Again</button>
+				</section>
+			</div>
+		</div>
+
+		<p class="hint">Use the arrow keys or WASD to move.</p>
+	</main>
+
+	<script src="app.js"></script>
+</body>
+</html>
