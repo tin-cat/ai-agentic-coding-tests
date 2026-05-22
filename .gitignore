@@ -41,3 +41,4 @@ tests/**/Pods/
 
 # Annoying files
 .DS_Store
+*.code-workspace
