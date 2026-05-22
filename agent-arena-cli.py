@@ -1793,10 +1793,15 @@ def run_add_cmd() -> None:
     app = AgentArenaApp(initial_stack=[RunAddScreen()])
     result = app.run()
     if result:
-        console.print(f"\n[green]✓[/green] Wrote {result}")
+        run_dir = Path(result).parent
         console.print(
-            "\n[dim]Next: drop the source code your LLM produced for each stage into the "
-            "stage subdirectories that were created.[/dim]"
+            f"\n[green]✓[/green] Created [bold]{run_dir}/[/bold] with your "
+            "[bold]run.yaml[/bold] and a subdirectory for each stage to hold the source code."
+        )
+        console.print(
+            "\n[dim]Optional: drop the source code your agent produced for each stage into its "
+            "stage subdirectory. This last step is entirely optional, your run.yaml on its own "
+            "is already a valid contribution.[/dim]"
         )
         console.print(
             "[dim]After making changes, run [bold]./agent-arena-cli.py validate[/bold] "
