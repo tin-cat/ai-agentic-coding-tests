@@ -1,0 +1,42 @@
+contributor_url: https://github.com/tin-cat
+date: 2026-05-21
+agent:
+  name: claude-code
+  plan: pro
+provider: anthropic
+model: claude-opus-4.7
+settings:
+  effort: high
+stages:
+  - id: stage-1-bootstrap
+    duration_sec: 733
+    tokens_in: 2500
+    tokens_out: 61100
+    cost_usd: 2.75
+    rating: excellent
+  - id: stage-2-tunnel-and-fire
+    duration_sec: 930
+    tokens_in: 2500
+    tokens_out: 49400
+    cost_usd: 3.1
+    rating: good
+    notes: Fire effect runs too fast.
+  - id: stage-3-rotozoom-and-artwork
+    duration_sec: 715
+    tokens_in: 3400
+    tokens_out: 33500
+    cost_usd: 2.26
+    rating: excellent
+  - id: stage-4-3d-parts
+    duration_sec: 1155
+    tokens_in: 3100
+    tokens_out: 43400
+    cost_usd: 3.2
+    rating: excellent
+  - id: stage-5-credits-scroller
+    duration_sec: 695
+    tokens_in: 2500
+    tokens_out: 48300
+    cost_usd: 3.7
+    rating: good
+    notes: Demo does not completely end, it stays in a final flash loop.

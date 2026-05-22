@@ -1,0 +1,74 @@
+contributor_url: https://github.com/tin-cat   # the URL that identifies the author of this test on the site
+name: old-school-demo
+title: An old-school demoscene demo
+description: |
+  A 90s-style demoscene production built with Three.js: a single, self-running
+  show of chained graphical effects synced to a MOD-like background tune. Every
+  effect is rendered under the restrictions of the era - a 320x200 internal
+  framebuffer with a 256-colour palette, scaled up to fill the screen - so it
+  looks and feels like a demo that would have run on a PC in 1994. Stages add
+  the classic effects one by one (sine-scroller, starfield, tunnel, fire,
+  rotozoom, a pixel-art image showcase, a shaded 3D object, a textured 3D
+  fly-by) and finish with the obligatory credits scroller, then polish the whole
+  thing into one continuous, music-synced demo.
+domain: game
+stack: threejs
+
+stages:
+  - id: stage-1-bootstrap
+    theme: bootstrap
+    prompt: |
+      Build a web-based old-school "demoscene" demo using Three.js. The whole production must run by itself, with no user interaction, like the demos sceners released in the 1990s.
+
+      The defining constraint: everything is rendered into a low-resolution internal framebuffer of exactly 320x200 pixels, restricted to a palette of at most 256 colours on screen at once, and then scaled up (nearest-neighbour, chunky pixels, correct 4:3 aspect ratio) to fill the browser window. Build this as the core of the engine: an offscreen 320x200 render target, a palette/quantisation step that reduces the frame to 256 colours, and a fullscreen upscale pass. Every effect from now on draws into this framebuffer, never directly to the screen.
+
+      Set up a "demo director": a sequencer that plays a looping, MOD-like background tune and drives a timeline. Effects appear one after another, synchronised to the music (beats and pattern changes trigger transitions between effects). The tune can be a tracker MOD/XM file played back, or a synthesised chiptune/tracker-style loop generated with the Web Audio API, as long as it sounds like the multi-channel sample-based music of the era.
+
+      Implement the first two effects, chained on the timeline:
+        - A horizontal sine-scroller: a single line of large bitmap-font text that scrolls right-to-left across the bottom while each character bobs up and down on a sine wave. This is the classic demo greeting line.
+        - A 3D starfield flying toward the viewer behind the scroller.
+
+      Add a README.md documenting the demo, the framebuffer/palette engine, the director/timeline, how music sync works, and how to add a new effect.
+
+  - id: stage-2-tunnel-and-fire
+    builds_on: stage-1-bootstrap
+    theme: features
+    prompt: |
+      Add two more classic effects to the timeline, each appearing in turn as the music progresses:
+
+        - The tunnel effect: an endless textured tunnel the camera flies through, with the texture scrolling and the tunnel twisting, palette-cycling its colours in time with the music.
+        - The fire effect: the classic bottom-up fire, a hot random seed line along the bottom that propagates upward and cools, using a fire palette (black -> red -> orange -> yellow -> white). Render it within the 320x200 / 256-colour budget.
+
+      Make the transitions between effects feel deliberate and tied to the tune (for example a fade through the palette, or a wipe), not just an instant cut. Both effects must be driven by the director's timeline so they start and end on musical boundaries.
+
+  - id: stage-3-rotozoom-and-artwork
+    builds_on: stage-2-tunnel-and-fire
+    theme: features
+    prompt: |
+      Add two more parts:
+
+        - A rotozoomer: a single texture (a tiled pattern) rendered across the whole screen while continuously rotating and zooming in and out, the way every demo of the era showed off. It should wrap/tile seamlessly.
+        - A graphician's showcase: a "beautiful image" part whose only job is to show off pixel art done under the era's restrictions. Display a hand-crafted-looking 256-colour image (you create the artwork) full-screen, with a slow palette-cycling or fade-in reveal and a small sine-scrolled caption crediting the (fictional) graphic artist. This is the part that exists purely to show a gorgeous picture, exactly as 90s demos did.
+
+      Keep everything inside the 320x200 / 256-colour framebuffer and synced to the music.
+
+  - id: stage-4-3d-parts
+    builds_on: stage-3-rotozoom-and-artwork
+    theme: extension
+    prompt: |
+      Add the 3D show-off parts, the centrepieces of the demo:
+
+        - A rotating 3D object: a single detailed model spinning in space, flat/Gouraud shaded in the limited palette (think the classic shaded vector objects, or a "glenz"-style transparent solid). It rotates smoothly on multiple axes.
+        - A 3D fly-by: a camera flying through a more complex 3D scene that shows off gorgeous lighting and texturing - real-time shadows or fake lens/lighting effects, textured surfaces, environment reflections - the part that screams "look what this machine can do". Even though Three.js can do far more, the result must still be downsampled through the 320x200 / 256-colour framebuffer so it keeps the chunky, dithered, period-correct look.
+
+      Both parts join the timeline in sequence and stay synced to the tune.
+
+  - id: stage-5-credits-scroller
+    builds_on: stage-4-3d-parts
+    theme: features
+    prompt: |
+      Add the obligatory end part: the credits scroller. A long block of text scrolls smoothly up the screen (with the usual sine wobble / perspective on the text) over a backdrop effect, while the music plays its final pattern.
+
+      The credits must, in true demoscene style, greet and credit the (fictional) team: list the code, the graphics/pixel art, and the music as if done by named sceners and a demo group, throw in greetings ("greets") to other groups, and add a few of the typical rambling personal messages and shout-outs. Make the wording feel authentically like a 90s demo's end-scroll.
+
+      Wire it as the last part of the timeline so the demo plays straight through from the intro scroller to these credits, then ends.

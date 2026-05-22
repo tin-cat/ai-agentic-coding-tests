@@ -73,6 +73,21 @@
     "logo": "/logos/stacks/node-express.svg"
   },
   {
+    "id": "threejs",
+    "name": "Three.js",
+    "category": "JavaScript",
+    "language": "javascript",
+    "description": "Browser WebGL graphics built on the Three.js library.",
+    "homepage": "https://threejs.org",
+    "keywords": [
+      "threejs",
+      "three.js",
+      "webgl",
+      "3d"
+    ],
+    "logo": "/logos/stacks/threejs.svg"
+  },
+  {
     "id": "react-vite",
     "name": "React + Vite",
     "category": "TypeScript",
