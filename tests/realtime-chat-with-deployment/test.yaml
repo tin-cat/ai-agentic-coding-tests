@@ -10,7 +10,8 @@ stages:
   - id: stage-1-first-run
     theme: bootstrap
     prompt: |
-      Build a real-time chat app: a backend built with Node and Express (use the `ws` library for the WebSocket server) and a minimal web client. Anyone who opens the page picks a display name and joins one shared room. Messages broadcast to all connected clients in real time and the last 50 messages are kept in memory and replayed to new joiners. Show a simple message list and an input box.
+      Build a real-time chat app: a backend built with Node and Express and a minimal web client. Anyone who opens the page picks a display name and joins a shared room. Messages broadcast to all connected clients in real time and the last 1000 messages are kept in memory and replayed to new joiners. The UI should look like a typical chatroom page, with a list of messages taking the entire screen except for an input and a "Send" button at the bottom to enter new messages.
+      Add a README.md documenting the code structure, the tech stack and useful information for the user like what's this project about, how to run it and contribute to it.
 
   - id: stage-2-rooms
     builds_on: stage-1-first-run
