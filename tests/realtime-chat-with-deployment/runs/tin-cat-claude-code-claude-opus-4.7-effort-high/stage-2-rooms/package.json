@@ -1,0 +1,18 @@
+{
+	"name": "realtime-chat",
+	"version": "1.0.0",
+	"description": "A real-time chat app with named rooms, built with Node, Express, WebSockets, and SQLite.",
+	"main": "server.js",
+	"type": "commonjs",
+	"scripts": {
+		"start": "node --experimental-sqlite server.js"
+	},
+	"engines": {
+		"node": ">=22.5.0"
+	},
+	"dependencies": {
+		"better-sqlite3": "^12.10.0",
+		"express": "^4.19.2",
+		"ws": "^8.17.0"
+	}
+}

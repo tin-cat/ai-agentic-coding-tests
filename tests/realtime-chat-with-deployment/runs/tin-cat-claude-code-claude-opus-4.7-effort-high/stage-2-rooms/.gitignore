@@ -1,0 +1,9 @@
+node_modules/
+npm-debug.log*
+.DS_Store
+.env
+
+# SQLite database (created at runtime; WAL/SHM sidecar files included)
+chat.db
+chat.db-wal
+chat.db-shm

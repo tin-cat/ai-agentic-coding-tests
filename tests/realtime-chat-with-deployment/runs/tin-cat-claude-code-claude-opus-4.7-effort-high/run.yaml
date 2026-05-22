@@ -19,5 +19,5 @@ stages:
     tokens_in: 3500
     tokens_out: 26700
     cost_usd: 1.88
-    rating: good
-    notes: Currently existing rooms are not shown, you must know the room name to join.
+    rating: failed
+    notes: Node crashes when another user joins the room. Seems to be due to using an experimental SQLite version due to node version. The tests he did passed.
