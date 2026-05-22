@@ -115,15 +115,21 @@ a:hover { text-decoration: underline; }
 .gh-link:hover { color: var(--cyan); border-color: var(--cyan); text-decoration: none; }
 .gh-link svg { width: 13px; height: 13px; fill: currentColor; }
 .gh-link-cta {
-  color: var(--cyan);
-  border-color: rgba(90,209,255,.4);
-  background: rgba(90,209,255,.08);
-  text-shadow: var(--glow-cyan);
+  color: var(--magenta);
+  border-color: rgba(255,106,213,.4);
+  background: rgba(255,106,213,.08);
+  text-shadow: var(--glow-magenta);
+  box-shadow: 0 0 6px rgba(255,106,213,.20);
 }
 .gh-link-cta:hover {
-  background: rgba(90,209,255,.18);
-  border-color: var(--cyan);
-  box-shadow: 0 0 14px rgba(90,209,255,.22);
+  color: var(--magenta);
+  border-color: var(--magenta);
+  background: rgba(255,106,213,.18);
+  animation: cta-glow 1.8s ease-in-out infinite;
+}
+@keyframes cta-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,106,213,.30); }
+  50%      { box-shadow: 0 0 18px rgba(255,106,213,.60); }
 }
 
 /* ─────────────────────────── sidebar ─────────────────────────── */
@@ -209,7 +215,7 @@ a:hover { text-decoration: underline; }
 /* ─────────────────────────── status bar ─────────────────────────── */
 .statusbar {
   grid-area: status;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: flex-end;
   padding: 0 16px;
   border-top: 1px solid var(--border);
   background: var(--bg-2);
@@ -548,6 +554,11 @@ td .pill { vertical-align: middle; }
   border-radius: 4px;
   padding: 14px 16px;
   position: relative;
+}
+a.metric {
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 .metric::before {
   content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 2px;
@@ -1167,6 +1178,8 @@ body.nav-open .nav-backdrop { display: block; }
 }
 .contribute-page a { color: var(--cyan); }
 .contribute-page a:hover { color: var(--text); text-decoration: underline; }
+.contribute-page a.cta-magenta,
+.contribute-page a.cta-magenta:hover { color: var(--magenta); }
 /* Card-style anchors should never underline on hover, regardless of the
    inline-link rule above. Specificity here intentionally beats it. */
 .contribute-page .path-card,
@@ -1252,8 +1265,14 @@ body.nav-open .nav-backdrop { display: block; }
   border-color: rgba(255,106,213,.4);
   background: rgba(255,106,213,.08);
   text-shadow: var(--glow-magenta);
+  box-shadow: 0 0 6px rgba(255,106,213,.20);
 }
-.cta-magenta:hover { background: rgba(255,106,213,.18); box-shadow: 0 0 14px rgba(255,106,213,.25); border-color: var(--magenta); color: var(--magenta); }
+.cta-magenta:hover {
+  background: rgba(255,106,213,.18);
+  border-color: var(--magenta);
+  color: var(--magenta);
+  animation: cta-glow 1.8s ease-in-out infinite;
+}
 
 /* OATH PANEL */
 .oath-panel {

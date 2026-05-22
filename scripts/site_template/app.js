@@ -21,7 +21,6 @@ Chart.defaults.animation = false;
 /* ──────────────────────────────── helpers ──────────────────────────────── */
 const $ = (sel, root = document) => root.querySelector(sel);
 const view = () => $('#view');
-const statusRoute = () => $('#statusRoute');
 
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -244,7 +243,6 @@ function highlightNav(name) {
   for (const el of document.querySelectorAll('.nav-item')) {
     el.classList.toggle('active', el.dataset.route === name);
   }
-  statusRoute().textContent = '▌ ' + name;
 }
 
 // Back/forward buttons → re-route from the new pathname.
@@ -285,16 +283,18 @@ function renderOverview() {
   const s = DATA.summary;
   const top = DATA.leaderboard[0];
   const recent = DATA.contributors.recent || [];
+  const beasts = DATA.hardware?.headline?.devices || 0;
 
   view().innerHTML = `
     ${heroHTML()}
 
     <div class="metric-grid">
-      <div class="metric cy"><div class="label">tests</div><div class="value">${s.tests}</div><div class="sub">community-defined</div></div>
-      <div class="metric"><div class="label">runs</div><div class="value">${s.runs}</div><div class="sub">contributed</div></div>
-      <div class="metric"><div class="label">stages</div><div class="value">${s.stages}</div><div class="sub">executed</div></div>
-      <div class="metric"><div class="label">models</div><div class="value">${s.models}</div><div class="sub">provider · model combos</div></div>
-      <div class="metric alt"><div class="label">contributors</div><div class="value">${s.contributors}</div><div class="sub">unique runners</div></div>
+      <a class="metric cy" href="/tests/"><div class="label">tests</div><div class="value">${s.tests}</div><div class="sub">community-defined</div></a>
+      <a class="metric" href="/runs/"><div class="label">runs</div><div class="value">${s.runs}</div><div class="sub">contributed</div></a>
+      ${beasts > 0 ? `
+      <a class="metric" href="/hardware/"><div class="label">silicon beasts</div><div class="value">${beasts}</div><div class="sub">self-hosted rigs</div></a>` : ''}
+      <a class="metric" href="/models/"><div class="label">models</div><div class="value">${s.models}</div><div class="sub">provider · model combos</div></a>
+      <a class="metric alt" href="/contributors/"><div class="label">contributors</div><div class="value">${s.contributors}</div><div class="sub">unique runners</div></a>
     </div>
 
     <div class="split-2">
