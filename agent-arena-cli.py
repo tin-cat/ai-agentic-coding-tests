@@ -748,6 +748,38 @@ Input, TextArea, Select {
     padding: 0 1;
 }
 
+/* RunStageEditScreen: prompt reference (left) beside the metrics form (right). */
+#stage-columns {
+    height: 1fr;
+}
+
+#stage-prompt-col {
+    width: 1fr;
+    height: 1fr;
+    margin: 0 1 0 0;
+}
+
+/* Labels default to width:auto and won't wrap; let them fill the column. */
+#stage-prompt-col Label {
+    width: 1fr;
+}
+
+#stage-form-col {
+    width: 1fr;
+    height: 1fr;
+}
+
+.prompt-scroll {
+    border: round $primary 50%;
+    padding: 0 1;
+    margin: 0 1 1 1;
+    height: 1fr;
+}
+
+#stage-prompt-text {
+    width: 1fr;
+}
+
 TestStageEditScreen, RunStageEditScreen, _TestPreviewScreen, _RunPreviewScreen {
     align: center middle;
 }
@@ -1098,71 +1130,110 @@ class RunStageEditScreen(ModalScreen[Optional[_RunStageDraft]]):
     BINDINGS = [
         Binding("escape", "cancel", "Cancel"),
         Binding("ctrl+s", "save", "Save"),
+        Binding("ctrl+y", "copy_prompt", "Copy prompt"),
     ]
 
-    def __init__(self, stage_id: str, *, initial: Optional[_RunStageDraft] = None) -> None:
+    def __init__(
+        self,
+        stage_id: str,
+        *,
+        prompt: str = "",
+        theme: str = "",
+        test_title: str = "",
+        initial: Optional[_RunStageDraft] = None,
+    ) -> None:
         super().__init__()
         self.stage_id = stage_id
+        self.prompt = prompt
+        self.theme = theme
+        self.test_title = test_title
         self.initial = initial
 
     def compose(self) -> ComposeResult:
         with Container(classes="modal-container"):
             yield Header()
-            with VerticalScroll():
-                yield Label(f"Stage: {self.stage_id}", classes="section-title")
-                yield Label(
-                    "Reminder: run this stage from a fresh agent session (close & reopen the agent).",
-                    classes="help-text",
-                )
-                yield Label("API time (mm:ss or seconds):", classes="field-label")
-                yield Input(
-                    value=str(self.initial.duration_sec) if (self.initial and self.initial.duration_sec) else "",
-                    placeholder="e.g. 7:27 or 447",
-                    id="duration",
-                )
-                yield Label(
-                    "Time the agent spent calling the model (API time), not time you spent reading"
-                    "responses or approving confirmations.",
-                    classes="help-text",
-                )
-                yield Label("Input tokens (optional, e.g. 12300 or 12.3k):", classes="field-label")
-                yield Input(
-                    value=str(self.initial.tokens_in) if (self.initial and self.initial.tokens_in is not None) else "",
-                    placeholder="empty to skip",
-                    id="tokens-in",
-                )
-                yield Label("Output tokens (optional):", classes="field-label")
-                yield Input(
-                    value=str(self.initial.tokens_out) if (self.initial and self.initial.tokens_out is not None) else "",
-                    placeholder="empty to skip",
-                    id="tokens-out",
-                )
-                yield Label("Cost in USD (optional, e.g. 0.63):", classes="field-label")
-                yield Input(
-                    value=str(self.initial.cost_usd) if (self.initial and self.initial.cost_usd is not None) else "",
-                    placeholder="empty to skip",
-                    id="cost",
-                )
-                yield Label("Rating:", classes="field-label")
-                yield Select(
-                    options=[(f"{r} - {RATING_BLURB[r]}", r) for r in RATINGS],
-                    value=self.initial.rating if self.initial else "good",
-                    id="rating",
-                    allow_blank=False,
-                )
-                yield Label("Notes (optional):", classes="field-label")
-                yield TextArea(
-                    self.initial.notes if (self.initial and self.initial.notes) else "",
-                    id="notes-area",
-                )
-                with Horizontal(classes="button-row"):
-                    yield Button("Cancel", id="cancel")
-                    yield Button("Save metrics", id="save", variant="success")
+            with Horizontal(id="stage-columns"):
+                # ── left: the test's prompt, ready to copy & paste into the agent ──
+                with Vertical(id="stage-prompt-col"):
+                    yield Label(f"Test: {self.test_title or '?'}", classes="section-title")
+                    stage_line = f"Stage: {self.stage_id}"
+                    if self.theme:
+                        stage_line += f"  ·  {self.theme}"
+                    yield Label(stage_line, classes="field-label")
+                    yield Label(
+                        "Feed this prompt verbatim into a fresh agent session (close & reopen the "
+                        "agent), working on the code left by the previous stage.",
+                        classes="help-text",
+                    )
+                    with Horizontal(classes="button-row"):
+                        yield Button("Copy prompt", id="copy-prompt")
+                    with VerticalScroll(classes="prompt-scroll"):
+                        yield Static(self.prompt or "(no prompt on file for this stage)", id="stage-prompt-text")
+                # ── right: the metrics form ──
+                with VerticalScroll(id="stage-form-col"):
+                    yield Label("API time (mm:ss or seconds):", classes="field-label")
+                    yield Input(
+                        value=str(self.initial.duration_sec) if (self.initial and self.initial.duration_sec) else "",
+                        placeholder="e.g. 7:27 or 447",
+                        id="duration",
+                    )
+                    yield Label(
+                        "Time the agent spent calling the model (API time), not time you spent reading"
+                        "responses or approving confirmations.",
+                        classes="help-text",
+                    )
+                    yield Label("Input tokens (optional, e.g. 12300 or 12.3k):", classes="field-label")
+                    yield Input(
+                        value=str(self.initial.tokens_in) if (self.initial and self.initial.tokens_in is not None) else "",
+                        placeholder="empty to skip",
+                        id="tokens-in",
+                    )
+                    yield Label("Output tokens (optional):", classes="field-label")
+                    yield Input(
+                        value=str(self.initial.tokens_out) if (self.initial and self.initial.tokens_out is not None) else "",
+                        placeholder="empty to skip",
+                        id="tokens-out",
+                    )
+                    yield Label("Cost in USD (optional, e.g. 0.63):", classes="field-label")
+                    yield Input(
+                        value=str(self.initial.cost_usd) if (self.initial and self.initial.cost_usd is not None) else "",
+                        placeholder="empty to skip",
+                        id="cost",
+                    )
+                    yield Label("Rating:", classes="field-label")
+                    yield Select(
+                        options=[(f"{r} - {RATING_BLURB[r]}", r) for r in RATINGS],
+                        value=self.initial.rating if self.initial else "good",
+                        id="rating",
+                        allow_blank=False,
+                    )
+                    yield Label("Notes (optional):", classes="field-label")
+                    yield TextArea(
+                        self.initial.notes if (self.initial and self.initial.notes) else "",
+                        id="notes-area",
+                    )
+                    with Horizontal(classes="button-row"):
+                        yield Button("Cancel", id="cancel")
+                        yield Button("Save metrics", id="save", variant="success")
             yield Footer()
 
     def on_mount(self) -> None:
         self.app.sub_title = f"stage: {self.stage_id}"
         self.query_one("#duration", Input).focus()
+
+    def action_copy_prompt(self) -> None:
+        self._copy_prompt()
+
+    @_on_event(Button.Pressed, "#copy-prompt")
+    def _on_copy_prompt(self) -> None:
+        self._copy_prompt()
+
+    def _copy_prompt(self) -> None:
+        if not self.prompt:
+            self.notify("No prompt to copy for this stage.", severity="warning")
+            return
+        self.app.copy_to_clipboard(self.prompt)
+        self.notify("Prompt copied to clipboard.")
 
     def action_cancel(self) -> None:
         self.dismiss(None)
@@ -1465,8 +1536,15 @@ class RunAddScreen(Screen):
             return
         stage_id = str(row_key.value)
         existing = next((s for s in self.run_stages if s.stage_id == stage_id), None)
+        stage = next((st for st in self.test.stages if st.id == stage_id), None) if self.test else None
         self.app.push_screen(
-            RunStageEditScreen(stage_id, initial=existing if (existing and existing.recorded) else None),
+            RunStageEditScreen(
+                stage_id,
+                prompt=stage.prompt if stage else "",
+                theme=stage.theme if stage else "",
+                test_title=self.test.title if self.test else "",
+                initial=existing if (existing and existing.recorded) else None,
+            ),
             lambda result: self._stage_returned(stage_id, result),
         )
 
