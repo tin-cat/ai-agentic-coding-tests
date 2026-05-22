@@ -160,7 +160,7 @@ DomainT = Literal[
 ]
 ThemeT = Literal[
     "bootstrap", "features", "refinements", "refactor",
-    "extension", "performance", "security", "other",
+    "extension", "performance", "security", "infrastructure", "other",
 ]
 THEMES: tuple[str, ...] = typing.get_args(ThemeT)
 

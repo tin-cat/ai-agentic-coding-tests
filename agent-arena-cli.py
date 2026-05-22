@@ -238,7 +238,7 @@ DomainT = Literal[
 ]
 ThemeT = Literal[
     "bootstrap", "features", "refinements", "refactor",
-    "extension", "performance", "security", "other",
+    "extension", "performance", "security", "infrastructure", "other",
 ]
 DOMAINS: tuple[str, ...] = typing.get_args(DomainT)
 THEMES: tuple[str, ...] = typing.get_args(ThemeT)
@@ -324,14 +324,15 @@ DOMAIN_LABELS = {
     "other":          "other",
 }
 THEME_LABELS = {
-    "bootstrap":   "bootstrap   — initial creation from scratch",
-    "features":    "features    — add new functionality",
-    "refinements": "refinements — polish, bug fixes, small improvements",
-    "refactor":    "refactor    — restructure without changing behavior",
-    "extension":   "extension   — significant new capability",
-    "performance": "performance — optimization work",
-    "security":    "security    — security hardening",
-    "other":       "other",
+    "bootstrap":      "bootstrap      — initial creation from scratch",
+    "features":       "features       — add new functionality",
+    "refinements":    "refinements    — polish, bug fixes, small improvements",
+    "refactor":       "refactor       — restructure without changing behavior",
+    "extension":      "extension      — significant new capability",
+    "performance":    "performance    — optimization work",
+    "security":       "security       — security hardening",
+    "infrastructure": "infrastructure — deployment, devops, CI/CD, ops work",
+    "other":          "other",
 }
 
 console = Console()

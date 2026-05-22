@@ -33,6 +33,6 @@ stages:
 
   - id: stage-5-deploy-aws
     builds_on: stage-4-security
-    theme: extension
+    theme: infrastructure
     prompt: |
       Make the whole app deployable to AWS with a single command. Provide infrastructure-as-code (e.g. AWS CDK, CloudFormation, or Terraform) plus a documented deploy script so a user with their own AWS account and credentials can set the app running from scratch — the WebSocket server, the static web client, and a publicly reachable HTTPS URL — without manual console clicking. The SQLite room history must live on durable storage (a mounted volume or equivalent) so it survives redeploys. Re-running the deploy after code changes must update the app in place without dropping existing message history or other persisted data. Document the required prerequisites, environment variables (including the admin token), and the deployment commands. Sensible tokens and keys must not be committed.
