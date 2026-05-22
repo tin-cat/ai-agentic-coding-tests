@@ -1,0 +1,9 @@
+node_modules/
+npm-debug.log*
+.DS_Store
+.env
+
+# SQLite message store (created at runtime)
+chat.db
+chat.db-wal
+chat.db-shm

@@ -1,0 +1,17 @@
+# Never copy host-built native modules into the image; they're rebuilt for Linux.
+node_modules
+npm-debug.log*
+
+# Local SQLite database and its WAL/SHM companions.
+chat.db
+chat.db-wal
+chat.db-shm
+
+# Infrastructure, build output, VCS, docs, and editor/OS cruft.
+deploy
+cdk.out
+.git
+.gitignore
+.env
+*.md
+.DS_Store

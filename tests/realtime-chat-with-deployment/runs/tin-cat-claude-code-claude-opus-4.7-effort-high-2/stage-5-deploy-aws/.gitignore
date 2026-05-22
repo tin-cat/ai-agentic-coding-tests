@@ -1,0 +1,17 @@
+node_modules/
+npm-debug.log*
+.DS_Store
+.env
+
+# SQLite message store (created at runtime)
+chat.db
+chat.db-wal
+chat.db-shm
+
+# CDK / deploy artifacts
+deploy/node_modules/
+deploy/cdk.out/
+deploy/*.js
+deploy/*.d.ts
+deploy/*.js.map
+cdk.out/

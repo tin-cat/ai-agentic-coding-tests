@@ -1,0 +1,48 @@
+contributor_url: https://github.com/tin-cat
+date: 2026-05-22
+agent:
+  name: claude-code
+  plan: max
+provider: anthropic
+model: claude-opus-4.7
+settings:
+  effort: high
+stages:
+  - id: stage-1-first-run
+    duration_sec: 123
+    tokens_in: 2700
+    tokens_out: 373100
+    cost_usd: 0.58
+    rating: excellent
+  - id: stage-2-rooms
+    duration_sec: 326
+    tokens_in: 2500
+    tokens_out: 28200
+    cost_usd: 1.51
+    rating: excellent
+    notes: Some UX problems like not being able to go back to the lobby, reloading the page asks for a username again,
+      or rooms without users disappear immediately. But that's ok because none of that was on the prompt, and it could
+      not be inferred.
+  - id: stage-3-private-messages
+    duration_sec: 373
+    tokens_in: 2100
+    tokens_out: 30200
+    cost_usd: 1.63
+    rating: excellent
+    notes: Private messages are not secure. UX is confusing for starting new PMs. Both issues mentioned by Claude, but
+      since this was not mentioned in the prompt, requirements are considered met.
+  - id: stage-4-security
+    duration_sec: 397
+    tokens_in: 6600
+    tokens_out: 29600
+    cost_usd: 2.11
+    rating: excellent
+    notes: Claude comments about this still being insecure for other reasons, like no real user tracking. Since those
+      were not part of the prompt, all objetives in the prompt are considered met.
+  - id: stage-5-deploy-aws
+    duration_sec: 902
+    tokens_in: 3300
+    tokens_out: 61700
+    cost_usd: 4.1
+    rating: excellent
+    notes: Wrapped it all in docker and used Amazon CDK. Created a deploy.sh to handle deployment.
