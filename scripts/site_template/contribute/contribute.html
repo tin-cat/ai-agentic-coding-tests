@@ -132,6 +132,11 @@ git push origin main</pre>
         </ul>
 
         <div class="note">
+          <span class="note-tag">isolate the run</span>
+          Run the test in its own isolated directory outside this repo, to avoid the agent from getting context from earlier runs or even other contributor's runs or the repo's git log. You can use a sandboxing feature instead if your agent supports it.
+        </div>
+
+        <div class="note">
           <span class="note-tag">stopping early is fine</span>
           Later stages pile new work on top of the previous stage's code, so if a stage comes out so broken that continuing would only stack good work on a broken foundation, just stop there. Rate the stages you actually ran and submit those, a short run is still useful data. Only include the stages you ran, no empty placeholders.
         </div>
