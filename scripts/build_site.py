@@ -1912,6 +1912,7 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         _line("Silicon beasts","/hardware/",     "Self-hosted rigs powering local inference — devices, GPUs, throughput."),
         _line("Source & CONTRIBUTING.md", github_url, "How to contribute a new test or a new run."),
         _line("Raw data dump (JSON)", "/stats.json", "Complete machine-readable dump of every aggregation."),
+        _line("Full corpus (Markdown)", "/llms-full.txt", "Single-file expansion of every test prompt, contributed run, and catalog entry."),
         "",
         "## Tests",
         "",
@@ -1951,6 +1952,156 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     llms_parts.append("")
     (out_dir / "llms.txt").write_text("\n".join(llms_parts), encoding="utf-8")
 
+    # ── llms-full.txt — full corpus for LLMs (llmstxt.org convention) ──
+    # Expanded single-file dump: test prompts, every contributed run with its
+    # per-stage metrics, and every catalog entry's metadata. Companion to
+    # llms.txt (which is a link index); use this when fetching the whole
+    # dataset in one go is preferable to crawling links.
+    def _abs(url_path: str) -> str:
+        return url_path if url_path.startswith(("http://", "https://")) else f"{site_url}{url_path}"
+
+    def _fmt_score(x: Optional[float]) -> str:
+        return "—" if x is None else f"{x * 10:.2f}/10"
+
+    def _fmt_money(x: Optional[float]) -> str:
+        return "—" if x is None else f"${x:.4f}"
+
+    def _fmt_tok(x: Optional[int]) -> str:
+        return "—" if x is None else f"{x:,}"
+
+    full_parts: list[str] = [
+        "# AgentArena · full corpus",
+        "",
+        f"> {TAGLINE}.",
+        "",
+        ("Single-file expansion of every test prompt, contributed run, and "
+         "catalog entry in AgentArena. Companion to llms.txt (link index). "
+         "Scores below are shown on a 0–10 scale; the underlying ratings are "
+         "excellent=10, good=7.5, partial=4, failed=0."),
+        "",
+        f"Snapshot: {summary['tests']} tests · {summary['runs']} runs · "
+        f"{summary['stages']} stages · {summary['contributors']} contributors. "
+        f"Built {build_date}.",
+        "",
+        f"Source: {github_url}",
+        f"Site: {site_url}/",
+        "",
+        "## Tests",
+        "",
+    ]
+
+    for t in per_test:
+        test_url = _abs(f"/tests/{t['name']}/")
+        full_parts += [
+            f"### {t['name']} — {t['title']}",
+            "",
+            t["description"],
+            "",
+            f"- URL: {test_url}",
+        ]
+        if t.get("domain"):
+            full_parts.append(f"- Domain: {t['domain']}")
+        if t.get("stack_name"):
+            full_parts.append(f"- Tech stack: {t['stack_name']}")
+        if t.get("contributor_handle"):
+            full_parts.append(f"- Authored by: {t['contributor_handle']}")
+        full_parts += [
+            f"- Stages: {t['stages_total']}",
+            f"- Contributed runs: {t['run_count']}",
+            "",
+            "#### Stage prompts",
+            "",
+        ]
+        for s in t["test_stages"]:
+            full_parts.append(f"##### {s['id']} — {s['theme']}")
+            if s.get("builds_on"):
+                full_parts.append(f"(builds on `{s['builds_on']}`)")
+            full_parts += ["", f"> {s['prompt'].strip()}", ""]
+
+        if t["runs"]:
+            full_parts += ["#### Contributed runs", ""]
+            for r in t["runs"]:
+                rig_bits = []
+                if r.get("framework"):    rig_bits.append(r["framework"])
+                if r.get("quantization"): rig_bits.append(r["quantization"])
+                rig = (" · " + " · ".join(rig_bits)) if rig_bits else ""
+                run_url = _abs(f"/tests/{t['name']}/runs/{r['run_id']}/")
+                full_parts += [
+                    f"##### {r['run_id']} · by {r['contributor_handle']} ({r['date']})",
+                    "",
+                    f"- URL: {run_url}",
+                    f"- Agent: {r['agent']}" + (f" ({r['agent_plan']})" if r.get("agent_plan") else ""),
+                    f"- Model: {r['model']} · Provider: {r['provider']}{rig}",
+                    f"- Avg score: {_fmt_score(r['avg_rating_score'])} · "
+                    f"Stages: {r['stages_run']}/{r['stages_total']} · "
+                    f"Total cost: {_fmt_money(r['total_cost_usd'])} · "
+                    f"Total time: {fmt_duration(r['total_duration_sec'])}",
+                ]
+                if r.get("hardware"):
+                    hw = r["hardware"]
+                    hw_bits = [hw.get(k) for k in ("device", "gpu") if hw.get(k)]
+                    if hw.get("vram_gb") is not None: hw_bits.append(f"{hw['vram_gb']}gb vram")
+                    if hw.get("ram_gb")  is not None: hw_bits.append(f"{hw['ram_gb']}gb ram")
+                    if hw_bits:
+                        full_parts.append(f"- Hardware: {' · '.join(map(str, hw_bits))}")
+                full_parts += ["", "| stage | rating | duration | tokens in | tokens out | cost | notes |",
+                                   "|---|---|---|---|---|---|---|"]
+                for s in r["stages"]:
+                    notes = (s.get("notes") or "").replace("|", "\\|").replace("\n", " ").strip() or "—"
+                    full_parts.append(
+                        f"| {s['id']} | {s['rating']} | {fmt_duration(s['duration_sec'])} | "
+                        f"{_fmt_tok(s.get('tokens_in'))} | {_fmt_tok(s.get('tokens_out'))} | "
+                        f"{_fmt_money(s.get('cost_usd'))} | {notes} |"
+                    )
+                full_parts.append("")
+        full_parts.append("")
+
+    def _section(heading: str, rows: list[dict], route: str, name_key: str = "name", id_key: str = "id") -> None:
+        if not rows:
+            return
+        full_parts.extend([f"## {heading}", ""])
+        for r in rows:
+            full_parts.extend([f"### {r[name_key]}", ""])
+            if r.get("description"):
+                full_parts.extend([r["description"].strip(), ""])
+            entry_url = _abs(f"/{route}/{r[id_key]}/")
+            full_parts.append(f"- URL: {entry_url}")
+            if r.get("homepage"):
+                full_parts.append(f"- Homepage: {r['homepage']}")
+            if r.get("vendor_name"):
+                full_parts.append(f"- Vendor: {r['vendor_name']}")
+            if r.get("category"):
+                full_parts.append(f"- Category: {r['category']}")
+            if r.get("language"):
+                full_parts.append(f"- Language: {r['language']}")
+            full_parts.append(
+                f"- Runs: {r.get('run_count', 0)} · "
+                f"Stages: {r.get('stage_count', 0)} · "
+                f"Tests: {r.get('test_count', 0)} · "
+                f"Avg score: {_fmt_score(r.get('avg_rating_score'))}"
+            )
+            full_parts.append("")
+
+    _section("Coding agents",        per_agent,    "agents")
+    _section("Inference providers",  per_provider, "providers")
+    _section("Models",               per_model,    "models")
+    _section("Tech stacks",          per_stack,    "stacks")
+
+    full_parts += ["## Contributors", ""]
+    for p in contributors["profiles"]:
+        contrib_url = _abs(f"/contributors/{p['handle']}/")
+        full_parts += [
+            f"### {p['handle']}",
+            "",
+            f"- URL: {contrib_url}",
+            f"- Runs: {p['run_count']} · Tests: {p['test_count']} · "
+            f"Avg score: {_fmt_score(p.get('avg_rating_score'))}",
+            "",
+        ]
+
+    (out_dir / "llms-full.txt").write_text("\n".join(full_parts), encoding="utf-8")
+    sizes["llms-full.txt"] = (out_dir / "llms-full.txt").stat().st_size
+
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")  # GitHub Pages: skip Jekyll
 
     n_tests = len(per_test)
@@ -1966,7 +2117,8 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     n_html = (10 + n_tests + 2 * n_runs + n_contribs
               + n_agents + n_providers + n_models + n_stacks + 1)  # +1 for 404
     print(f"✓ Wrote {n_html} HTML files (per-route shells + 404.html)")
-    print(f"✓ Wrote sitemap.xml ({len(sitemap_urls)} canonical URLs) + robots.txt + llms.txt")
+    print(f"✓ Wrote sitemap.xml ({len(sitemap_urls)} canonical URLs) + robots.txt + "
+          f"llms.txt + llms-full.txt ({sizes['llms-full.txt']:,} bytes)")
     print(f"✓ Wrote app.js, styles.css, boot.js (boot payload {sizes['boot.js']:,} bytes)")
     print(f"✓ Wrote {out_dir / 'index.json'} ({sizes['index.json']:,} bytes)")
     print(f"✓ Wrote {out_dir / 'runs.json'} ({sizes['runs.json']:,} bytes)")
