@@ -1,0 +1,26 @@
+contributor_url: https://github.com/tin-cat
+name: titanic-sinking-simulation
+title: Titanic sinking simulation
+description: |
+  Physically-accurate simulation of the sinking of the Titanic. A quite complex, single-stage test (easy to run) that asks the model not only to recreate it with a physical model (not a simple animation), but relies also on the model's knowledge on how the Titanic sank, and the thorough documentation that has been released about it on the Internet. To succeed, it should recreate someting akin to the  mythical scenes of the movie, where the ship's stern rises above sea level before starting to sink, breaks in half and sinks in two big pieces. It should also provide approximate results on the final  distribution of at least the two main chunks of the ship as they were finally left on the sea floor.
+domain: game
+stages:
+  - id: stage-1-simulation
+    theme: bootstrap
+    prompt: |
+      Build a real-time, physics-accurate simulation of the sinking of the Titanic. Use a 2D side-view as the physics ground truth. Rendering must be 2D Canvas/SVG, not 3D. The source of truth must be a  2D physics state. It should run in a physics engine that simulates the relevant conditions, variables and anything else that results in a plausible approximation to the way the Titanic really sank, as has been thoroughly documented.
+
+      Hard, non-negotiable requirements. Stop if you cannot strictly fulfill all of them completely. Failing to fulfill all of them will be considered a failure:
+
+      - Use a real, general-purpose 2D rigid-body physics engine. Matter.js, Planck.js (Box2D port), or Rapier (2D mode). Every body in the scene must be a body in the engine's solver. Do not write your own rigid-body engine.
+      - Nothing is scripted, no event-keyed code, the entire simulation runs naturally without scripted intervention, from a given starting point to an end that sufficiently approximates the real events.
+      - The ship is a compound body of at least 20 hull segments connected by breakable joints. Build the hull as a chain of rigid segments along the keel. Each joint connecting two segments has a finite maximum load before it fails. The hull split's location and time must emerge from joint failures under the bending stress produced by flood-driven mass redistribution. They should not be specified anywhere in the code or anywhere else.
+      - The simulation starts just after the collision with the iceberg, with the corresponding compartments already breached and leaking water, and goes on until the ship (or what's left of it) rests static on the sea floor.
+      - Buoyancy is simulated by the physics engine.
+      - Water inside the ship is simulated as continuous mass per compartment. Each compartment is a bounded by hull and bulkhead walls. Water enters through any wall whose plating has failed at a rate given by Torricelli's law using the actual current pressure head. Water tracks the ship's local "down" direction, so its center of mass shifts within the compartment as the ship tilts — feed that shifting mass back into the rigid-body dynamics as a point mass on the appropriate hull segment each step. This is a two-way coupling. When local water level exceeds a bulkhead height (in the compartment's frame), water overflows into the adjacent compartment via the same fluid-mechanics inflow.
+      - Funnels are physically attached to specific hull segments by joints with finite strength. They fall when the joint fails under load same mechanism as the hull break.
+      - After the hull splits, the two pieces are independent compound bodies in the same world. They can collide with each other. Both sink to the seafloor, which is a static body in the engine.
+      - The time multiplier is derived continuously from scene activity. Pick a metric that captures "how much is changing right now": the maximum rate of change of bending stress across all joints, or the kinetic-energy time derivative, or the maximum body velocity. The multiplier inversely tracks the metric, low-pass-filtered to prevent jitter, clamped to a sensible range (1x-300x). No lookup table keyed on time. When everything is calm (slow flooding), the multiplier rises automatically; when stress is spiking (the break, the plunge, the seafloor impact), it falls automatically. Same mechanism, both regimes.
+      - The following should not be tunable constants: when the break happens, where the break happens, which compartments are damaged, what time the funnel falls, what the time multiplier is at any given simulated moment.
+
+      The resulting visualization should be informative, educational and easy to understand and watch. For example: Even though the events took place at night, make it so the entire scene is clearly visible.

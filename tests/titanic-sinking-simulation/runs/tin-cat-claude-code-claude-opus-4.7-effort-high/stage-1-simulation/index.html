@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RMS Titanic — Physics-Accurate Sinking Simulation</title>
+<style>
+	* { box-sizing: border-box; }
+	html, body {
+		margin: 0;
+		padding: 0;
+		height: 100%;
+		background: #0d1b2a;
+		color: #e8eef5;
+		font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+		overflow: hidden;
+	}
+	#stage {
+		position: absolute;
+		inset: 0;
+	}
+	canvas {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+	.panel {
+		position: absolute;
+		background: rgba(13, 27, 42, 0.78);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 6px;
+		padding: 10px 12px;
+		font-size: 12px;
+		line-height: 1.5;
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+	}
+	#hud { top: 12px; left: 12px; min-width: 260px; }
+	#legend { top: 12px; right: 12px; min-width: 200px; }
+	#events { bottom: 12px; left: 12px; max-width: 380px; max-height: 200px; overflow: hidden; }
+	#about { bottom: 12px; right: 12px; max-width: 320px; }
+	h3 { margin: 0 0 6px 0; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #a9c3df; }
+	.row { display: flex; justify-content: space-between; gap: 12px; }
+	.row span:last-child { font-variant-numeric: tabular-nums; color: #ffd87a; }
+	.legend-row { display: flex; align-items: center; gap: 8px; margin: 2px 0; }
+	.swatch { width: 14px; height: 14px; border-radius: 2px; border: 1px solid rgba(255,255,255,0.15); }
+	.evt { margin: 2px 0; font-size: 11.5px; color: #cfe0f0; }
+	.evt time { color: #8aa1b8; margin-right: 6px; font-variant-numeric: tabular-nums; }
+	.evt.warn { color: #ffb86b; }
+	.evt.crit { color: #ff7a7a; }
+</style>
+</head>
+<body>
+<div id="stage">
+	<canvas id="canvas"></canvas>
+	<div id="hud" class="panel">
+		<h3>Telemetry</h3>
+		<div class="row"><span>Sim time</span><span id="hud-time">0:00</span></div>
+		<div class="row"><span>Time multiplier</span><span id="hud-mult">1.0×</span></div>
+		<div class="row"><span>Activity metric</span><span id="hud-activity">0.00</span></div>
+		<div class="row"><span>Bow trim</span><span id="hud-trim">0.0°</span></div>
+		<div class="row"><span>List</span><span id="hud-list">—</span></div>
+		<div class="row"><span>Flooded mass</span><span id="hud-flood">0 t</span></div>
+		<div class="row"><span>Hull segments</span><span id="hud-segs">24 / 24</span></div>
+		<div class="row"><span>Intact joints</span><span id="hud-joints">23 / 23</span></div>
+		<div class="row"><span>Hull pieces</span><span id="hud-pieces">1</span></div>
+		<div class="row"><span>Funnels standing</span><span id="hud-funnels">4 / 4</span></div>
+	</div>
+	<div id="legend" class="panel">
+		<h3>Legend</h3>
+		<div class="legend-row"><div class="swatch" style="background:#5a6675"></div><span>Hull (intact)</span></div>
+		<div class="legend-row"><div class="swatch" style="background:#c47a3a"></div><span>Hull (stressed)</span></div>
+		<div class="legend-row"><div class="swatch" style="background:#d33"></div><span>Hull (failing)</span></div>
+		<div class="legend-row"><div class="swatch" style="background:#e8e8e8"></div><span>Superstructure / funnel</span></div>
+		<div class="legend-row"><div class="swatch" style="background:#3a7fbf"></div><span>Flood water</span></div>
+		<div class="legend-row"><div class="swatch" style="background:#11253a"></div><span>Bulkhead</span></div>
+	</div>
+	<div id="events" class="panel">
+		<h3>Event log (emergent)</h3>
+		<div id="evt-list"></div>
+	</div>
+	<div id="about" class="panel">
+		<h3>About</h3>
+		<div style="font-size:11.5px; color:#cfe0f0;">
+			Real-time 2D rigid-body simulation in Matter.js. The hull is a chain of 24 rigid segments joined by breakable constraints. Flooding pressure (Torricelli), buoyancy, and CoM shift are computed each step and applied as forces to the engine bodies. Break location and time, funnel falls, and the time multiplier all emerge from the solver — none are scripted.
+		</div>
+	</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+<script src="sim.js"></script>
+</body>
+</html>
