@@ -1,0 +1,29 @@
+framework:
+    messenger:
+        default_bus: command.bus
+
+        # CQRS: distinct buses for commands (mutate state, return nothing
+        # meaningful) and queries (read-only, return a result). Both are
+        # synchronous in this stage; the underlying transport can swap to async
+        # later without touching application code.
+        buses:
+            command.bus:
+                default_middleware:
+                    enabled: true
+                    allow_no_handlers: false
+                    allow_no_senders: true
+            query.bus:
+                default_middleware:
+                    enabled: true
+                    allow_no_handlers: false
+                    allow_no_senders: true
+
+        transports:
+            sync: 'sync://'
+
+        routing:
+            # All command and query messages stay synchronous in this stage.
+            Frontstage\Catalog\Application\Command\CreateEvent\CreateEventCommand: sync
+            Frontstage\Catalog\Application\Command\PublishEvent\PublishEventCommand: sync
+            Frontstage\Catalog\Application\Query\GetEvent\GetEventQuery: sync
+            Frontstage\Catalog\Application\Query\ListPublishedEvents\ListPublishedEventsQuery: sync

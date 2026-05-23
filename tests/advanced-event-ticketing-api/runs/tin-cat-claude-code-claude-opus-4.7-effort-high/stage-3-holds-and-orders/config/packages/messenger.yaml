@@ -1,0 +1,62 @@
+framework:
+    messenger:
+        default_bus: command.bus
+
+        # CQRS: distinct buses for commands (mutate state, return nothing
+        # meaningful) and queries (read-only, return a result). Both are
+        # synchronous in this stage; the underlying transport can swap to async
+        # later without touching application code.
+        buses:
+            command.bus:
+                default_middleware:
+                    enabled: true
+                    allow_no_handlers: false
+                    allow_no_senders: true
+            query.bus:
+                default_middleware:
+                    enabled: true
+                    allow_no_handlers: false
+                    allow_no_senders: true
+
+        transports:
+            sync: 'sync://'
+
+            # AMQP transport, wired to RabbitMQ. No messages are routed here yet
+            # (the command/query buses stay synchronous in this stage), but the
+            # transport is provisioned so a later stage can switch routing from
+            # `sync` to `async` for any message without further infrastructure
+            # changes. `auto_setup` (on by default) provisions the exchange and
+            # queue on first use.
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    exchange:
+                        name: frontstage.events
+                        type: topic
+                    queues:
+                        frontstage.async: ~
+                retry_strategy:
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 2
+                    max_delay: 0
+
+        routing:
+            # All command and query messages stay synchronous in this stage.
+            Frontstage\Catalog\Application\Command\CreateEvent\CreateEventCommand: sync
+            Frontstage\Catalog\Application\Command\PublishEvent\PublishEventCommand: sync
+            Frontstage\Catalog\Application\Query\GetEvent\GetEventQuery: sync
+            Frontstage\Catalog\Application\Query\ListPublishedEvents\ListPublishedEventsQuery: sync
+            Frontstage\Reservations\Application\Command\PlaceHold\PlaceHoldCommand: sync
+            Frontstage\Reservations\Application\Command\ReleaseHold\ReleaseHoldCommand: sync
+            Frontstage\Reservations\Application\Query\GetAvailability\GetAvailabilityQuery: sync
+            Frontstage\Ordering\Application\Command\PlaceOrder\PlaceOrderCommand: sync
+            Frontstage\Ordering\Application\Query\GetOrder\GetOrderQuery: sync
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                # Override the AMQP transport in tests so the suite does not
+                # need a running RabbitMQ.
+                async: 'in-memory://'

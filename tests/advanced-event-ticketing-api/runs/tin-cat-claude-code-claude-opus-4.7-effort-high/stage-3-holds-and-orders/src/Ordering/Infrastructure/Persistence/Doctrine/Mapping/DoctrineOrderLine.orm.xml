@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+
+    <entity name="Frontstage\Ordering\Infrastructure\Persistence\Doctrine\Entity\DoctrineOrderLine"
+            table="ordering_order_lines">
+
+        <indexes>
+            <index name="idx_ordering_line_order" columns="order_id"/>
+        </indexes>
+
+        <unique-constraints>
+            <unique-constraint name="uniq_ordering_line_order_seat"
+                               columns="order_id,section,row_label,seat_number"/>
+        </unique-constraints>
+
+        <id name="id" type="bigint">
+            <generator strategy="IDENTITY"/>
+        </id>
+
+        <field name="section" type="string" length="64" nullable="false"/>
+        <field name="rowLabel" type="string" column="row_label" length="64" nullable="false"/>
+        <field name="seatNumber" type="string" column="seat_number" length="32" nullable="false"/>
+        <field name="priceTierId" type="string" column="price_tier_id" length="63" nullable="false"/>
+        <field name="priceAmount" type="integer" column="price_amount" nullable="false"/>
+        <field name="priceCurrency" type="string" column="price_currency" length="3" nullable="false"/>
+
+        <many-to-one field="order"
+                     target-entity="Frontstage\Ordering\Infrastructure\Persistence\Doctrine\Entity\DoctrineOrder"
+                     inversed-by="lines">
+            <join-column name="order_id" referenced-column-name="id" nullable="false" on-delete="CASCADE"/>
+        </many-to-one>
+
+    </entity>
+</doctrine-mapping>

@@ -1,0 +1,17 @@
+catalog:
+    resource:
+        path: '../src/Catalog/Infrastructure/Http/Controller/'
+        namespace: Frontstage\Catalog\Infrastructure\Http\Controller
+    type: attribute
+
+reservations:
+    resource:
+        path: '../src/Reservations/Infrastructure/Http/Controller/'
+        namespace: Frontstage\Reservations\Infrastructure\Http\Controller
+    type: attribute
+
+ordering:
+    resource:
+        path: '../src/Ordering/Infrastructure/Http/Controller/'
+        namespace: Frontstage\Ordering\Infrastructure\Http\Controller
+    type: attribute

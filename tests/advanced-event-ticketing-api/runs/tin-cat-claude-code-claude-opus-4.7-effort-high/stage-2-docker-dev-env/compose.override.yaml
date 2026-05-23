@@ -1,0 +1,15 @@
+# Dev-only overrides: expose backing-service ports on the host so developers
+# can attach a SQL client, an AMQP CLI, or redis-cli from outside Docker.
+services:
+  database:
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  rabbitmq:
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+
+  redis:
+    ports:
+      - "${REDIS_PORT:-6379}:6379"

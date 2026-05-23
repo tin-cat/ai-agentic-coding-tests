@@ -1,0 +1,5 @@
+catalog:
+    resource:
+        path: '../src/Catalog/Infrastructure/Http/Controller/'
+        namespace: Frontstage\Catalog\Infrastructure\Http\Controller
+    type: attribute

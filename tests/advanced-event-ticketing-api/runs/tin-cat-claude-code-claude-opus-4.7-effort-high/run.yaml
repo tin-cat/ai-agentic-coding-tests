@@ -1,0 +1,33 @@
+contributor_url: https://github.com/tin-cat
+date: 2026-05-23
+agent:
+  name: claude-code
+  plan: max
+provider: anthropic
+model: claude-opus-4.7
+settings:
+  effort: high
+stages:
+  - id: stage-1-domain-skeleton
+    duration_sec: 1099
+    tokens_in: 653
+    tokens_out: 78700
+    cost_usd: 7.89
+    rating: good
+    notes: Decided to make Events own Venues, which is arguably a bad data design choice which does not allow the same 
+      Venue to hold multiple Events. Commands carry arrays instead of DTOs. Very minor mistakes in comments.
+  - id: stage-2-docker-dev-env
+    duration_sec: 630
+    tokens_in: 191
+    tokens_out: 40900
+    cost_usd: 4.59
+    rating: failed
+    notes: Created a makefile-based development environment setup. A Dockerfile build fails because some files 
+      referenced are not available because they're included in .dockerignore. Functional tests fail.
+  - id: stage-3-holds-and-orders
+    duration_sec: 1781
+    tokens_in: 211
+    tokens_out: 102000
+    cost_usd: 15.88
+    rating: failed
+    notes: Functional tests fail.

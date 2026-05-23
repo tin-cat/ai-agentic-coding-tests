@@ -1,0 +1,10 @@
+framework:
+    # The Lock component is backed by Redis (DSN supplied via LOCK_DSN), which
+    # lets locks be coordinated across multiple application instances.
+    lock: '%env(LOCK_DSN)%'
+
+when@test:
+    framework:
+        # Tests drop back to a process-local flock so the suite is not coupled
+        # to a running Redis.
+        lock: 'flock'

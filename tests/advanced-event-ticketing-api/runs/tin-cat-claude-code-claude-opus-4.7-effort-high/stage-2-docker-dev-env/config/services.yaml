@@ -1,0 +1,44 @@
+# Service wiring for Frontstage.
+#
+# The container is part of the Symfony adapter layer. The domain layer is never
+# autoloaded as services (it contains plain PHP objects, value objects, and
+# aggregate roots). Only application handlers and infrastructure adapters are
+# registered. Adapters are bound to their domain ports via interface aliases.
+
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    # Application layer: command and query handlers per bounded context.
+    # Tagged so Symfony Messenger picks them up on the command/query buses.
+    Frontstage\Catalog\Application\:
+        resource: '../src/Catalog/Application/'
+
+    # Infrastructure adapters per bounded context.
+    Frontstage\Catalog\Infrastructure\:
+        resource: '../src/Catalog/Infrastructure/'
+        exclude:
+            - '../src/Catalog/Infrastructure/Persistence/Doctrine/Entity/'
+
+    # Controllers are infrastructure adapters; they must be public so the router
+    # can invoke them.
+    Frontstage\Catalog\Infrastructure\Http\Controller\:
+        resource: '../src/Catalog/Infrastructure/Http/Controller/'
+        tags: ['controller.service_arguments']
+
+    # Port -> adapter bindings for the Catalog context.
+    Frontstage\Catalog\Domain\Repository\EventRepository:
+        alias: Frontstage\Catalog\Infrastructure\Persistence\Doctrine\DoctrineEventRepository
+
+    Frontstage\Catalog\Application\Query\EventReadModel:
+        alias: Frontstage\Catalog\Infrastructure\Persistence\Doctrine\DoctrineEventReadModel
+
+    Frontstage\Catalog\Application\Bus\CommandBus:
+        alias: Frontstage\Catalog\Infrastructure\Messenger\MessengerCommandBus
+
+    Frontstage\Catalog\Application\Bus\QueryBus:
+        alias: Frontstage\Catalog\Infrastructure\Messenger\MessengerQueryBus

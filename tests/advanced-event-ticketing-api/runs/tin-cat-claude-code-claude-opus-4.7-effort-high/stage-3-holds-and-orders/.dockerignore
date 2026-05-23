@@ -1,0 +1,14 @@
+.git
+.gitignore
+.dockerignore
+.env.local
+.env.local.php
+.env.*.local
+.phpunit.cache
+.phpunit.result.cache
+.idea
+.vscode
+vendor
+var
+docker
+README.md

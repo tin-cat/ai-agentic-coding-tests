@@ -1,0 +1,17 @@
+framework:
+    cache:
+        # Redis backs the app cache pool. The DSN comes from REDIS_URL so the
+        # connection target can be swapped per environment without touching
+        # configuration.
+        app: cache.adapter.redis
+        default_redis_provider: '%env(REDIS_URL)%'
+
+when@test:
+    framework:
+        cache:
+            # Tests use the filesystem adapter so cached items persist across
+            # the multiple in-process requests a single test issues (the array
+            # adapter is reset between requests by Symfony's services
+            # resetter). ApiTestCase clears the pool in setUp/tearDown so
+            # tests stay isolated from each other.
+            app: cache.adapter.filesystem
