@@ -357,7 +357,7 @@ function renderOverview() {
 }
 
 function heroHTML() {
-  const tagline = DATA.tagline || 'Community contributed benchmarks of agentic AI coding setups';
+  const tagline = DATA.tagline || 'Benchmark your AI coding rig against the world';
   return `
     <section class="hero-panel">
       <div class="hero-main">

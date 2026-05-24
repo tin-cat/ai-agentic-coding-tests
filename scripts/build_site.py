@@ -1347,7 +1347,8 @@ def fmt_duration(seconds: Optional[float]) -> str:
     return f"{h}h {m:02d}m"
 
 
-TAGLINE = "Community contributed benchmarks of agentic AI coding setups"
+TAGLINE = "Benchmark your AI coding rig against the world"
+BRAND_SUB = "Community contributed benchmarks of agentic AI coding setups"
 
 
 def _write_json(path: Path, data: Any) -> int:
@@ -1744,6 +1745,7 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
         html = tmpl.render(
             project_name="AgentArena",
             tagline=TAGLINE,
+            brand_sub=BRAND_SUB,
             github_url=github_url,
             build_date=build_date,
             summary=summary,
@@ -1851,6 +1853,7 @@ def render(out_dir: Path, github_url: str, site_url: str) -> None:
     fallback_html = tmpl.render(
         project_name="AgentArena",
         tagline=TAGLINE,
+        brand_sub=BRAND_SUB,
         github_url=github_url,
         build_date=build_date,
         summary=summary,
