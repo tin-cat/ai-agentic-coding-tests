@@ -1,8 +1,18 @@
 [
   {
+    "id": "claude-opus-4.8",
+    "name": "Claude Opus 4.8",
+    "description": "Anthropic's top-tier flagship; strongest reasoning and long-horizon agentic coding, highest cost.",
+    "homepage": "https://www.anthropic.com/claude/opus",
+    "category": "closed-hosted",
+    "vendor": "Anthropic",
+    "logo": "/logos/providers/anthropic.svg",
+    "aliases": ["opus-4.8", "claude-opus-4-8"]
+  },
+  {
     "id": "claude-opus-4.7",
     "name": "Claude Opus 4.7",
-    "description": "Anthropic's top-tier flagship; strongest reasoning and long-horizon agentic coding, highest cost.",
+    "description": "Previous-generation Anthropic flagship; strong reasoning and long-horizon agentic coding.",
     "homepage": "https://www.anthropic.com/claude/opus",
     "category": "closed-hosted",
     "vendor": "Anthropic",
